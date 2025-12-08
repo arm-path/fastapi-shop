@@ -1,0 +1,23 @@
+[project]
+name = "shop"
+version = "0.1.0"
+description = ""
+authors = [
+    { name = "Rinat", email = "arm.path.py@gmail.com" }
+]
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi[all] (>=0.124.0,<0.125.0)",
+    "sqlalchemy (>=2.0.44,<3.0.0)",
+    "alembic (>=1.17.2,<2.0.0)",
+    "pydantic-settings (>=2.12.0,<3.0.0)",
+    "asyncpg (>=0.31.0,<0.32.0)"
+]
+
+[tool.poetry]
+packages = [{ include = "shop", from = "src" }]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
