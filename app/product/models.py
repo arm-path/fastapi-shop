@@ -14,3 +14,4 @@ class Category(Base):
 @event.listens_for(Category, 'before_update')
 def generate_slug(mapper, connection, target):
     target.slug = slugify(target.title, max_length=255)
+
