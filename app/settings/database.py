@@ -2,13 +2,19 @@ from typing import Annotated, AsyncGenerator
 
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, declared_attr
 
 from app.settings.settings import settings
+from app.utils import camel_to_snake
 
 
 class Base(DeclarativeBase):
-    pass
+    __abstract__ = True
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    @declared_attr
+    def __tablename__(cls) -> str:
+        return camel_to_snake(cls.__name__)
 
 
 async_engine = create_async_engine(settings.postgres_url, echo=False)
