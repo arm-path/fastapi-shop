@@ -1,11 +1,9 @@
-from typing import Any, Coroutine
+
 
 from fastapi import HTTPException
-from sqlalchemy import update, Update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.product import Category
 from app.product.models import Category
 from app.product.schemas import CategorySchema
 
@@ -28,6 +26,7 @@ class CategoryService:
         if not category:
             raise HTTPException(status_code=404, detail='Category not found!')
         category.title = data.title
+        category.parent_id = data.parent_id
         try:
             await session.commit()
         except IntegrityError as e:

@@ -1,8 +1,8 @@
 """Initial
 
-Revision ID: 023fcf89aec4
+Revision ID: 307875d4e8b4
 Revises: 
-Create Date: 2025-12-09 19:31:34.150896
+Create Date: 2025-12-10 20:41:13.146228
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '023fcf89aec4'
+revision: str = '307875d4e8b4'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -24,10 +24,12 @@ def upgrade() -> None:
     op.create_table('category',
     sa.Column('title', sa.String(length=255), nullable=False),
     sa.Column('slug', sa.String(length=255), nullable=False),
+    sa.Column('parent_id', sa.Integer(), nullable=True),
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('slug'),
-    sa.UniqueConstraint('title')
+    sa.ForeignKeyConstraint(['parent_id'], ['category.id'], name=op.f('fk_category_parent_id_category'), ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_category')),
+    sa.UniqueConstraint('slug', name=op.f('uq_category_slug')),
+    sa.UniqueConstraint('title', name=op.f('uq_category_title'))
     )
     # ### end Alembic commands ###
 
