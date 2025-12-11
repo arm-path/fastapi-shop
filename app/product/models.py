@@ -1,7 +1,7 @@
 from typing import Literal
 
 from slugify import slugify
-from sqlalchemy import String, event, ForeignKey, Numeric, Integer
+from sqlalchemy import String, event, ForeignKey, Numeric, Integer, CheckConstraint, UniqueConstraint
 from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -37,6 +37,21 @@ class CharacteristicProduct(Base):
     characteristic_id: Mapped[Characteristic] = mapped_column(ForeignKey('characteristic.id', ondelete='CASCADE'))
     product_id: Mapped[Product] = mapped_column(ForeignKey('product.id', ondelete='CASCADE'))
     value: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    __table_args__ = (
+        CheckConstraint(
+            """
+            EXISTS (
+                SELECT 1
+                FROM characteristic c
+                JOIN product p ON p.id = characteristic_product.product_id
+                WHERE c.id = characteristic_product.characteristic_id AND c.category_id = p.category_id
+            )
+            """,
+            name='chk_characteristic_product_category_match'
+        ),
+        UniqueConstraint('characteristic_id', 'product_id', name='uq_characteristic_productl'),
+    )
 
 
 @event.listens_for(Category, 'before_insert')
