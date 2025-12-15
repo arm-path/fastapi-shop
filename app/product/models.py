@@ -32,6 +32,10 @@ class Characteristic(Base):
         ENUM('integer', 'float', 'string', 'boolean', name='enum_type_characteristic'),
     )
 
+    __table_args__ = (
+        UniqueConstraint('title', 'category_id', name='uq_tb-characteristic_title_category_id'),
+    )
+
 
 class CharacteristicProduct(Base):
     characteristic_id: Mapped[Characteristic] = mapped_column(ForeignKey('characteristic.id', ondelete='CASCADE'))

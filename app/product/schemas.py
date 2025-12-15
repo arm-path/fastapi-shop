@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -12,3 +14,9 @@ class CategoryListSchema(CategorySchema):
 
 class CategoryItemSchema(CategoryListSchema):
     slug: str
+
+
+class CharacteristicSchema(BaseModel):
+    title: str
+    unit: str | None = None
+    type: Literal['integer', 'float', 'string', 'boolean'] = 'string'
