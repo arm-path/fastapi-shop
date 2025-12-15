@@ -1,8 +1,10 @@
 from typing import List
 
 from fastapi import HTTPException, status
+from sqlalchemy import select, Result
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.product.models import Category, Characteristic
 from app.product.schemas import CategorySchema, CharacteristicSchema
@@ -87,3 +89,14 @@ class CategoryService:
             raise HTTPException(status_code=404, detail='Characteristic not found.')
         await session.delete(characteristic)
         await session.commit()
+
+    @classmethod
+    async def detail(cls, session: AsyncSession, category_id):
+        query = (
+            select(Category)
+            .where(Category.id == category_id)
+            .options(selectinload(Category.characteristics))
+        )
+        category: Result[tuple[Category]] = await session.execute(query)
+        category: Category | None = category.scalar_one_or_none()
+        return category

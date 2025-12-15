@@ -38,3 +38,8 @@ async def update_characteristics(characteristic_id: int,
 @category_router.delete('/delete-characteristic/{characteristic_id}')
 async def delete_characteristic(characteristic_id: int, session: SessionDepends):
     await CategoryService.delete_characteristic(session, characteristic_id)
+
+
+@category_router.get('/detail/{category_id}')
+async def category_detail(category_id: int, session: SessionDepends):
+    return await CategoryService.detail(session, category_id)

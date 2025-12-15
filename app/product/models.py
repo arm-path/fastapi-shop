@@ -1,9 +1,9 @@
-from typing import Literal
+from typing import Literal, List
 
 from slugify import slugify
 from sqlalchemy import String, event, ForeignKey, Numeric, Integer, CheckConstraint, UniqueConstraint
 from sqlalchemy.dialects.postgresql import ENUM
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.settings.database import Base
 
@@ -14,6 +14,8 @@ class Category(Base):
     parent_id: Mapped[Category | None] = mapped_column(
         ForeignKey('category.id', ondelete='CASCADE'), nullable=True
     )
+
+    characteristics: Mapped[List['Characteristic']] = relationship(back_populates='category')
 
 
 class Product(Base):
@@ -31,6 +33,8 @@ class Characteristic(Base):
     type: Mapped[Literal['integer', 'float', 'string', 'boolean']] = mapped_column(
         ENUM('integer', 'float', 'string', 'boolean', name='enum_type_characteristic'),
     )
+
+    category: Mapped['Category'] = relationship(back_populates='characteristics')
 
     __table_args__ = (
         UniqueConstraint('title', 'category_id', name='uq_tb-characteristic_title_category_id'),
