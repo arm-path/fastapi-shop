@@ -20,6 +20,11 @@ async def category_update(category_id: int, data: CategorySchema, session: Sessi
     return await CategoryService.update(session, category_id, data)
 
 
+@category_router.delete('/delete/{category_id}')
+async def category_delete(category_id: int, session: SessionDepends):
+    await CategoryService.delete(session, category_id)
+
+
 @category_router.post('/create-characteristics/{category_id}')
 async def create_characteristics(category_id: int,
                                  data: List[CharacteristicSchema],

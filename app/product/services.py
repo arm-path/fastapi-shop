@@ -37,6 +37,14 @@ class CategoryService:
         return category
 
     @classmethod
+    async def delete(cls, session: AsyncSession, category_id: int):
+        category = session.get(Category, category_id)
+        if not category:
+            raise HTTPException(status_code=404, detail='Category not found.')
+        await session.delete(category)
+        await session.commit()
+
+    @classmethod
     async def add_characteristic(cls,
                                  session: AsyncSession,
                                  category_id: int,
