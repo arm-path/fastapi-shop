@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, List
 
 from pydantic import BaseModel, Field
 
@@ -28,3 +28,8 @@ class ProductSchema(BaseModel):
     price: float
     discount: int
     description: str | None = None
+
+
+class ProductCharacteristicSchema(BaseModel):
+    characteristic_id: int
+    value: str

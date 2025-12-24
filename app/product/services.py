@@ -6,8 +6,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.product.models import Category, Characteristic, Product
-from app.product.schemas import CategorySchema, CharacteristicSchema, ProductSchema
+from app.product.models import Category, Characteristic, Product, CharacteristicProduct
+from app.product.schemas import CategorySchema, CharacteristicSchema, ProductSchema, ProductCharacteristicSchema
 
 
 class CategoryService:
@@ -129,7 +129,7 @@ class ProductService:
 
     @classmethod
     async def update(cls, session: AsyncSession, product_id: int, data: ProductSchema):
-        product = session.get(Product, product_id)
+        product = await session.get(Product, product_id)
         if not product:
             raise HTTPException(status_code=404, detail='Product not found')
 
@@ -153,6 +153,7 @@ class ProductService:
         except Exception as e:
             await session.rollback()
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail='Internal server error.')
+        return product
 
     @classmethod
     async def delete(cls, session: AsyncSession, product_id: int):
@@ -162,3 +163,25 @@ class ProductService:
         await session.delete(product)
         # TODO: CharacteristicProduct delete by product_id.
         await session.commit()
+
+    @classmethod
+    async def add_characteristic(cls, session: AsyncSession, product_id: int, data: List[ProductCharacteristicSchema]):
+        product_characteristic = []
+        for characteristic in data:
+            product_characteristic.append(CharacteristicProduct(
+                product_id=product_id,
+                characteristic_id=characteristic.characteristic_id,
+                value=characteristic.value
+            ))
+
+        # try:
+        session.add_all(product_characteristic)
+        await session.commit()
+        # except
+        '''
+        sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.ForeignKeyViolationError'>: INSERT или UPDATE в таблице "characteristic_product" нарушает ограничение внешнего ключа "fk_characteristic_product_product_id_product"
+        DETAIL:  Ключ (product_id)=(2) отсутствует в таблице "product".
+        [SQL: INSERT INTO characteristic_product (characteristic_id, product_id, value) VALUES ($1::INTEGER, $2::INTEGER, $3::VARCHAR) RETURNING characteristic_product.id]
+        [parameters: (2, 2, '1')]
+        '''
+        # TODO: Get need field product_id or characteristic_id.
