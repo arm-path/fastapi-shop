@@ -2,8 +2,8 @@ from typing import List
 
 from fastapi import APIRouter
 
-from app.product.schemas import CategorySchema, CharacteristicSchema
-from app.product.services import CategoryService
+from app.product.schemas import CategorySchema, CharacteristicSchema, ProductSchema
+from app.product.services import CategoryService, ProductService
 from app.settings.database import SessionDepends
 
 category_router = APIRouter(prefix='/category')
@@ -48,3 +48,18 @@ async def delete_characteristic(characteristic_id: int, session: SessionDepends)
 @category_router.get('/detail/{category_id}')
 async def category_detail(category_id: int, session: SessionDepends):
     return await CategoryService.detail(session, category_id)
+
+
+@product_router.post('/create')
+async def create_product(data: ProductSchema, session: SessionDepends):
+    return await ProductService.create(session, data)
+
+
+@product_router.post('/update/{product_id}')
+async def update_product(data: ProductSchema, product_id: int, session: SessionDepends):
+    return await ProductService.update(session, product_id, data)
+
+
+@product_router.post('/delete/{product_id}')
+async def delete_product(product_id: int, session: SessionDepends):
+    return await ProductService.delete(session, product_id)

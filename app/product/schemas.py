@@ -20,3 +20,11 @@ class CharacteristicSchema(BaseModel):
     title: str
     unit: str | None = None
     type: Literal['integer', 'float', 'string', 'boolean'] = 'string'
+
+
+class ProductSchema(BaseModel):
+    title: str
+    category_id: int
+    price: float
+    discount: int
+    description: str | None = None

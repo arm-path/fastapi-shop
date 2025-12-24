@@ -6,8 +6,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.product.models import Category, Characteristic
-from app.product.schemas import CategorySchema, CharacteristicSchema
+from app.product.models import Category, Characteristic, Product
+from app.product.schemas import CategorySchema, CharacteristicSchema, ProductSchema
 
 
 class CategoryService:
@@ -108,3 +108,57 @@ class CategoryService:
         category: Result[tuple[Category]] = await session.execute(query)
         category: Category | None = category.scalar_one_or_none()
         return category
+
+
+class ProductService:
+    @classmethod
+    async def create(cls, session: AsyncSession, data: ProductSchema) -> Product:
+        product = Product(**data.model_dump())
+        try:
+            session.add(product)
+            await session.commit()
+        except IntegrityError as e:
+            await session.rollback()
+            if e.orig.pgcode == '23503':
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Category not found.')
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail='Unhandled exception.')
+        except Exception as e:
+            await session.rollback()
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail='Internal server error.')
+        return product
+
+    @classmethod
+    async def update(cls, session: AsyncSession, product_id: int, data: ProductSchema):
+        product = session.get(Product, product_id)
+        if not product:
+            raise HTTPException(status_code=404, detail='Product not found')
+
+        category_is_changed = product.category_id != data.category_id
+
+        product.title = data.title
+        product.category_id = data.category_id
+        product.price = data.price
+        product.discount = data.discount
+        product.description = data.description
+
+        #   TODO: category_is_changed: CharacteristicProduct delete by product_id.
+
+        try:
+            await session.commit()
+        except IntegrityError as e:
+            await session.rollback()
+            if e.orig.pgcode == '23503':
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Category not found.')
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail='Unhandled exception.')
+        except Exception as e:
+            await session.rollback()
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail='Internal server error.')
+
+    @classmethod
+    async def delete(cls, session: AsyncSession, product_id: int):
+        product = await session.get(Product, product_id)
+        if not product:
+            raise HTTPException(status_code=404, detail='Product not found.')
+        await session.delete(product)
+        # TODO: CharacteristicProduct delete by product_id.
+        await session.commit()
