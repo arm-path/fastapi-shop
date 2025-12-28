@@ -1,13 +1,15 @@
-from typing import List
+from typing import List, Sequence
 
 from fastapi import HTTPException, status
-from sqlalchemy import select, Result
+from sqlalchemy import select, Result, Select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.exceptions import DataTypeException
 from app.product.models import Category, Characteristic, Product, CharacteristicProduct
 from app.product.schemas import CategorySchema, CharacteristicSchema, ProductSchema, ProductCharacteristicSchema
+from app.utils import is_float, is_boolean
 
 
 class CategoryService:
@@ -167,21 +169,50 @@ class ProductService:
     @classmethod
     async def add_characteristic(cls, session: AsyncSession, product_id: int, data: List[ProductCharacteristicSchema]):
         product_characteristic = []
+        characteristic_ids = []
         for characteristic in data:
             product_characteristic.append(CharacteristicProduct(
                 product_id=product_id,
                 characteristic_id=characteristic.characteristic_id,
                 value=characteristic.value
             ))
+            characteristic_ids.append(characteristic.characteristic_id)
 
-        # try:
-        session.add_all(product_characteristic)
-        await session.commit()
-        # except
-        '''
-        sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.ForeignKeyViolationError'>: INSERT или UPDATE в таблице "characteristic_product" нарушает ограничение внешнего ключа "fk_characteristic_product_product_id_product"
-        DETAIL:  Ключ (product_id)=(2) отсутствует в таблице "product".
-        [SQL: INSERT INTO characteristic_product (characteristic_id, product_id, value) VALUES ($1::INTEGER, $2::INTEGER, $3::VARCHAR) RETURNING characteristic_product.id]
-        [parameters: (2, 2, '1')]
-        '''
-        # TODO: Get need field product_id or characteristic_id.
+        characteristics_query: Select = select(Characteristic).where(Characteristic.id.in_(characteristic_ids))
+        characteristic_result: Result[tuple[Characteristic]] = await session.execute(characteristics_query)
+        characteristic_objects: Sequence[Characteristic] = characteristic_result.scalars().all()
+        category_ids = []
+
+        for obj in characteristic_objects:
+            category_ids.append(obj.category_id)
+            for characteristic in data:
+                if characteristic.characteristic_id == obj.id:
+                    if obj.type == 'integer' and not characteristic.value.isdigit():
+                        raise DataTypeException('integer', characteristic.__dict__)
+                    if obj.type == 'float' and not is_float(characteristic.value):
+                        raise DataTypeException('float', characteristic.__dict__)
+                    if obj.type == 'boolean' and not is_boolean(characteristic.value):
+                        raise DataTypeException('boolean', characteristic.__dict__)
+
+        category_ids = list(set([obj.category_id for obj in characteristic_objects]))
+
+        if len(category_ids) > 1:
+            raise HTTPException(status_code=400, detail='Characteristics with different categories.')
+
+        product = await session.get(Product, product_id)
+
+        if not product:
+            raise HTTPException(status_code=404, detail='Product not found.')
+
+        if product.category_id != category_ids[0]:
+            raise HTTPException(status_code=400, detail='Characteristics do not belong to the products.')
+
+        try:
+            session.add_all(product_characteristic)
+            await session.commit()
+        except IntegrityError as e:
+            if e.orig.pgcode == '23503':
+                message = e.orig.__cause__.__dict__['detail'].replace('(', '').replace(')', '').replace('"', '')
+                raise HTTPException(status_code=400, detail=message)
+            if e.orig.pgcode == '23505':
+                raise HTTPException(status_code=400, detail='Дублирование существующей характеристики.')

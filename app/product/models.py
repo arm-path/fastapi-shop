@@ -1,11 +1,12 @@
 from typing import Literal, List
 
 from slugify import slugify
-from sqlalchemy import String, event, ForeignKey, Numeric, Integer, CheckConstraint, UniqueConstraint
+from sqlalchemy import String, event, ForeignKey, Numeric, Integer, UniqueConstraint
 from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.settings.database import Base
+from app.utils import is_float, is_boolean
 
 
 class Category(Base):
@@ -47,18 +48,7 @@ class CharacteristicProduct(Base):
     value: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     __table_args__ = (
-        CheckConstraint(
-            """
-            EXISTS (
-                SELECT 1
-                FROM characteristic c
-                JOIN product p ON p.id = characteristic_product.product_id
-                WHERE c.id = characteristic_product.characteristic_id AND c.category_id = p.category_id
-            )
-            """,
-            name='chk_characteristic_product_category_match'
-        ),
-        UniqueConstraint('characteristic_id', 'product_id', name='uq_characteristic_productl'),
+        UniqueConstraint('characteristic_id', 'product_id', name='uq_characteristic_product'),
     )
 
 
