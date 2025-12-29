@@ -2,7 +2,8 @@ from typing import List
 
 from fastapi import APIRouter
 
-from app.product.schemas import CategorySchema, CharacteristicSchema, ProductSchema, ProductCharacteristicSchema
+from app.product.schemas import CategorySchema, CharacteristicSchema, ProductSchema, ProductCharacteristicSchema, \
+    ProductCharacteristicSchemaUpdate
 from app.product.services import CategoryService, ProductService
 from app.settings.database import SessionDepends
 
@@ -71,3 +72,10 @@ async def create_product_characteristic(product_id: int,
                                         session: SessionDepends
                                         ):
     return await ProductService.add_characteristic(session, product_id, data)
+
+
+@product_router.post('/update-characteristics/{product_id}')
+async def update_product_characteristic(product_id: int,
+                                        data: List[ProductCharacteristicSchemaUpdate],
+                                        session: SessionDepends):
+    return await ProductService.update_characteristic(session, product_id, data)

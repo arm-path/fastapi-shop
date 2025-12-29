@@ -1,4 +1,4 @@
-from typing import Literal, List
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -32,4 +32,9 @@ class ProductSchema(BaseModel):
 
 class ProductCharacteristicSchema(BaseModel):
     characteristic_id: int
+    value: str
+
+
+class ProductCharacteristicSchemaUpdate(BaseModel):
+    id: int
     value: str

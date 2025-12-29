@@ -8,8 +8,9 @@ from sqlalchemy.orm import selectinload
 
 from app.exceptions import DataTypeException
 from app.product.models import Category, Characteristic, Product, CharacteristicProduct
-from app.product.schemas import CategorySchema, CharacteristicSchema, ProductSchema, ProductCharacteristicSchema
-from app.utils import is_float, is_boolean
+from app.product.schemas import CategorySchema, CharacteristicSchema, ProductSchema, ProductCharacteristicSchema, \
+    ProductCharacteristicSchemaUpdate
+from app.utils import check_type
 
 
 class CategoryService:
@@ -186,13 +187,8 @@ class ProductService:
         for obj in characteristic_objects:
             category_ids.append(obj.category_id)
             for characteristic in data:
-                if characteristic.characteristic_id == obj.id:
-                    if obj.type == 'integer' and not characteristic.value.isdigit():
-                        raise DataTypeException('integer', characteristic.__dict__)
-                    if obj.type == 'float' and not is_float(characteristic.value):
-                        raise DataTypeException('float', characteristic.__dict__)
-                    if obj.type == 'boolean' and not is_boolean(characteristic.value):
-                        raise DataTypeException('boolean', characteristic.__dict__)
+                if characteristic.characteristic_id == obj.id and not check_type(obj.type, characteristic.value):
+                    raise DataTypeException(obj.type, characteristic.__dict__)
 
         category_ids = list(set([obj.category_id for obj in characteristic_objects]))
 
@@ -215,4 +211,32 @@ class ProductService:
                 message = e.orig.__cause__.__dict__['detail'].replace('(', '').replace(')', '').replace('"', '')
                 raise HTTPException(status_code=400, detail=message)
             if e.orig.pgcode == '23505':
-                raise HTTPException(status_code=400, detail='Дублирование существующей характеристики.')
+                raise HTTPException(status_code=400, detail='Duplication characteristic.')
+
+    @classmethod
+    async def update_characteristic(cls,
+                                    session: AsyncSession,
+                                    product_id: int,
+                                    data: List[ProductCharacteristicSchemaUpdate]
+                                    ):
+
+        product_characteristic_ids = [characteristic.id for characteristic in data]
+        product_characteristic_query: Select = (
+            select(CharacteristicProduct)
+            .where(CharacteristicProduct.id.in_(product_characteristic_ids),
+                   CharacteristicProduct.product_id == product_id)
+            .options(selectinload(CharacteristicProduct.characteristic))
+        )
+
+        product_characteristic_result: Result = await session.execute(product_characteristic_query)
+        product_characteristic_obj: Sequence[CharacteristicProduct] = product_characteristic_result.scalars().all()
+
+        for characteristic in data:
+            for product_characteristic in product_characteristic_obj:
+                if product_characteristic.id == characteristic.id:
+                    if not check_type(product_characteristic.characteristic.type, characteristic.value):
+                        raise DataTypeException(product_characteristic.characteristic.type, characteristic.__dict__)
+                    product_characteristic.value = characteristic.value
+                    break
+
+        await session.commit()
