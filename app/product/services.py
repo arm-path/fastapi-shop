@@ -8,8 +8,11 @@ from sqlalchemy.orm import selectinload
 
 from app.exceptions import DataTypeException
 from app.product.models import Category, Characteristic, Product, CharacteristicProduct
-from app.product.schemas import CategorySchema, CharacteristicSchema, ProductSchema, ProductCharacteristicSchema, \
-    ProductCharacteristicSchemaUpdate
+from app.product.schemas import (CategorySchema,
+                                 CharacteristicSchema,
+                                 ProductSchema,
+                                 ProductCharacteristicSchema,
+                                 ProductCharacteristicSchemaUpdate)
 from app.utils import check_type
 
 
