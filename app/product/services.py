@@ -1,7 +1,7 @@
 from typing import List, Sequence
 
 from fastapi import HTTPException, status
-from sqlalchemy import select, Result, Select
+from sqlalchemy import select, Result, Select, delete
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -144,9 +144,12 @@ class ProductService:
         product.discount = data.discount
         product.description = data.description
 
-        #   TODO: category_is_changed: CharacteristicProduct delete by product_id.
-
         try:
+            if category_is_changed:
+                product_characteristics_query = (
+                    delete(CharacteristicProduct).where(CharacteristicProduct.product_id == product.id)
+                )
+                await session.execute(product_characteristics_query)
             await session.commit()
         except IntegrityError as e:
             await session.rollback()
@@ -164,7 +167,10 @@ class ProductService:
         if not product:
             raise HTTPException(status_code=404, detail='Product not found.')
         await session.delete(product)
-        # TODO: CharacteristicProduct delete by product_id.
+        product_characteristic_query = (
+            delete(CharacteristicProduct).where(CharacteristicProduct.product_id == product.id)
+        )
+        await session.execute(product_characteristic_query)
         await session.commit()
 
     @classmethod
