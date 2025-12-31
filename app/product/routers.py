@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter
+from fastapi import APIRouter, status
 
 from app.product.schemas import (CategorySchema,
                                  CharacteristicSchema,
@@ -8,8 +8,10 @@ from app.product.schemas import (CategorySchema,
                                  ProductCharacteristicSchema,
                                  ProductCharacteristicSchemaUpdate,
                                  CategoryItemSchema,
-                                 CategoryWithCharacteristicSchema, CategoryDetailSchema,
-                                 CategoryDetailWithCharacteristicSchema)
+                                 CategoryWithCharacteristicSchema,
+                                 CategoryDetailSchema,
+                                 CategoryDetailWithCharacteristicSchema,
+                                 CharacteristicDetailSchema)
 from app.product.services import CategoryService, ProductService
 from app.settings.database import SessionDepends
 
@@ -29,29 +31,34 @@ async def category_detail(category_id: int, session: SessionDepends, characteris
     return await CategoryService.detail(session, category_id, characteristics)
 
 
-@category_router.post('/create')
+@category_router.post('/create/', response_model=CategoryItemSchema)
 async def category_create(data: CategorySchema, session: SessionDepends):
     return await CategoryService.create(session, data)
 
 
-@category_router.put('/update/{category_id}')
+@category_router.put('/update/{category_id}/', response_model=CategoryItemSchema)
 async def category_update(category_id: int, data: CategorySchema, session: SessionDepends):
     return await CategoryService.update(session, category_id, data)
 
 
-@category_router.delete('/delete/{category_id}')
+@category_router.delete('/delete/{category_id}/', status_code=status.HTTP_204_NO_CONTENT)
 async def category_delete(category_id: int, session: SessionDepends):
     await CategoryService.delete(session, category_id)
 
 
-@category_router.post('/create-characteristics/{category_id}')
+@category_router.get('/list-characteristics/{category_id}/', response_model=List[CharacteristicDetailSchema])
+async def list_characteristics(category_id: int, session: SessionDepends):
+    return await CategoryService.get_characteristic(session, category_id)
+
+
+@category_router.post('/create-characteristics/{category_id}/', response_model=List[CharacteristicDetailSchema])
 async def create_characteristics(category_id: int,
                                  data: List[CharacteristicSchema],
                                  session: SessionDepends):
-    await CategoryService.add_characteristic(session, category_id, data)
+    return await CategoryService.add_characteristic(session, category_id, data)
 
 
-@category_router.put('/update-characteristic/{characteristic_id}')
+@category_router.put('/update-characteristic/{characteristic_id}/', response_model=CharacteristicDetailSchema)
 async def update_characteristics(characteristic_id: int,
                                  data: CharacteristicSchema,
                                  session: SessionDepends
@@ -59,14 +66,9 @@ async def update_characteristics(characteristic_id: int,
     return await CategoryService.update_characteristic(session, characteristic_id, data)
 
 
-@category_router.delete('/delete-characteristic/{characteristic_id}')
+@category_router.delete('/delete-characteristic/{characteristic_id}/', status_code=status.HTTP_204_NO_CONTENT)
 async def delete_characteristic(characteristic_id: int, session: SessionDepends):
     await CategoryService.delete_characteristic(session, characteristic_id)
-
-
-@category_router.get('/detail/{category_id}')
-async def category_detail(category_id: int, session: SessionDepends):
-    return await CategoryService.detail(session, category_id)
 
 
 @product_router.post('/create')

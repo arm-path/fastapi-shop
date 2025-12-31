@@ -64,7 +64,7 @@ class CategoryService:
         return category
 
     @classmethod
-    async def delete(cls, session: AsyncSession, category_id: int):
+    async def delete(cls, session: AsyncSession, category_id: int) -> None:
         category = session.get(Category, category_id)
         if not category:
             raise HTTPException(status_code=404, detail='Category not found.')
@@ -72,10 +72,17 @@ class CategoryService:
         await session.commit()
 
     @classmethod
+    async def get_characteristic(cls, session: AsyncSession, category_id: int) -> Sequence[Characteristic]:
+        characteristic_query: Select = select(Characteristic).where(Characteristic.category_id == category_id)
+        characteristic_result: Result = await session.execute(characteristic_query)
+        characteristics: Sequence[Characteristic] = characteristic_result.scalars().all()
+        return characteristics
+
+    @classmethod
     async def add_characteristic(cls,
                                  session: AsyncSession,
                                  category_id: int,
-                                 data: List[CharacteristicSchema]):
+                                 data: List[CharacteristicSchema]) -> Sequence[Characteristic]:
         instances = []
         for instance in data:
             instances.append(Characteristic(category_id=category_id, **instance.model_dump()))
@@ -92,12 +99,13 @@ class CategoryService:
         except Exception as e:
             await session.rollback()
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail='Internal server error.')
+        return await cls.get_characteristic(session, category_id)
 
     @classmethod
     async def update_characteristic(cls,
                                     session: AsyncSession,
                                     characteristic_id: int,
-                                    data: CharacteristicSchema):
+                                    data: CharacteristicSchema) -> Characteristic:
         characteristic = await session.get(Characteristic, characteristic_id)
         if not characteristic:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Characteristic not found.')
@@ -118,7 +126,7 @@ class CategoryService:
     async def delete_characteristic(cls,
                                     session: AsyncSession,
                                     characteristic_id: int
-                                    ):
+                                    ) -> None:
         characteristic = await session.get(Characteristic, characteristic_id)
         if not characteristic:
             raise HTTPException(status_code=404, detail='Characteristic not found.')
