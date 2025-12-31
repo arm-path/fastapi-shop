@@ -9,6 +9,7 @@ from app.settings.database import Base
 
 
 class Category(Base):
+    id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     slug: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     parent_id: Mapped[Category | None] = mapped_column(
@@ -16,6 +17,9 @@ class Category(Base):
     )
 
     characteristics: Mapped[List['Characteristic']] = relationship(back_populates='category')
+
+    parent: Mapped['Category'] = relationship('Category', remote_side=[id], back_populates='categories')
+    categories: Mapped[List['Category']] = relationship('Category', back_populates='parent')
 
 
 class Product(Base):

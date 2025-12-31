@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, List
 
 from pydantic import BaseModel, Field
 
@@ -20,6 +20,22 @@ class CharacteristicSchema(BaseModel):
     title: str
     unit: str | None = None
     type: Literal['integer', 'float', 'string', 'boolean'] = 'string'
+
+
+class CharacteristicDetailSchema(CharacteristicSchema):
+    id: int
+
+
+class CategoryWithCharacteristicSchema(CategoryItemSchema):
+    characteristics: List[CharacteristicDetailSchema]
+
+
+class CategoryDetailSchema(CategoryItemSchema):
+    categories: List[CategoryItemSchema]
+
+
+class CategoryDetailWithCharacteristicSchema(CategoryDetailSchema):
+    characteristics: List[CategoryItemSchema]
 
 
 class ProductSchema(BaseModel):

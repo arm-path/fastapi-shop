@@ -2,13 +2,31 @@ from typing import List
 
 from fastapi import APIRouter
 
-from app.product.schemas import CategorySchema, CharacteristicSchema, ProductSchema, ProductCharacteristicSchema, \
-    ProductCharacteristicSchemaUpdate
+from app.product.schemas import (CategorySchema,
+                                 CharacteristicSchema,
+                                 ProductSchema,
+                                 ProductCharacteristicSchema,
+                                 ProductCharacteristicSchemaUpdate,
+                                 CategoryItemSchema,
+                                 CategoryWithCharacteristicSchema, CategoryDetailSchema,
+                                 CategoryDetailWithCharacteristicSchema)
 from app.product.services import CategoryService, ProductService
 from app.settings.database import SessionDepends
 
 category_router = APIRouter(prefix='/category')
 product_router = APIRouter(prefix='/product')
+
+
+@category_router.get('/list/',
+                     response_model=List[CategoryItemSchema] | List[CategoryWithCharacteristicSchema])
+async def category_list(session: SessionDepends, characteristics: bool | None = None):
+    return await CategoryService.list(session, characteristics)
+
+
+@category_router.get('/detail/{category_id}/',
+                     response_model=CategoryDetailSchema | CategoryDetailWithCharacteristicSchema)
+async def category_detail(category_id: int, session: SessionDepends, characteristics: bool | None = None):
+    return await CategoryService.detail(session, category_id, characteristics)
 
 
 @category_router.post('/create')

@@ -17,6 +17,27 @@ from app.utils import check_type
 
 
 class CategoryService:
+
+    @classmethod
+    async def list(cls, session: AsyncSession, characteristics: bool) -> Sequence[Category]:
+        category_query: Select = select(Category).where(Category.parent_id == None)
+        if characteristics:
+            category_query: Select = get_category_load_characteristic(category_query)
+        category_result: Result = await session.execute(category_query)
+        categories: Sequence[Category] = category_result.scalars().all()
+        return categories
+
+    @classmethod
+    async def detail(cls, session: AsyncSession, category_id: int, characteristic: bool) -> Sequence[Category]:
+        category_query: Select = (
+            select(Category).where(Category.id == category_id).options(selectinload(Category.categories))
+        )
+        if characteristic:
+            category_query: Select = get_category_load_characteristic(category_query)
+        category_result: Result = await session.execute(category_query)
+        categories: Sequence[Category] = category_result.scalar_one_or_none()
+        return categories
+
     @classmethod
     async def create(cls, session: AsyncSession, data: CategorySchema) -> Category:
         category = Category(**data.model_dump())
@@ -103,17 +124,6 @@ class CategoryService:
             raise HTTPException(status_code=404, detail='Characteristic not found.')
         await session.delete(characteristic)
         await session.commit()
-
-    @classmethod
-    async def detail(cls, session: AsyncSession, category_id):
-        query = (
-            select(Category)
-            .where(Category.id == category_id)
-            .options(selectinload(Category.characteristics))
-        )
-        category: Result[tuple[Category]] = await session.execute(query)
-        category: Category | None = category.scalar_one_or_none()
-        return category
 
 
 class ProductService:
@@ -249,3 +259,10 @@ class ProductService:
                     break
 
         await session.commit()
+
+
+def get_category_load_characteristic(query: Select):
+    return query.options(
+        selectinload(Category.characteristics)
+        .load_only(Characteristic.id, Characteristic.title, Characteristic.type, Characteristic.unit)
+    )
