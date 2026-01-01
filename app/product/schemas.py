@@ -46,6 +46,10 @@ class ProductSchema(BaseModel):
     description: str | None = None
 
 
+class ProductDetailSchema(ProductSchema):
+    id: int
+
+
 class ProductCharacteristicSchema(BaseModel):
     characteristic_id: int
     value: str
@@ -54,3 +58,19 @@ class ProductCharacteristicSchema(BaseModel):
 class ProductCharacteristicSchemaUpdate(BaseModel):
     id: int
     value: str
+
+
+class CharacteristicProductSchema(BaseModel):
+    id: int
+    title: str
+    unit: str
+
+
+class CharacteristicValueProductSchema(BaseModel):
+    id: int
+    characteristic: CharacteristicProductSchema
+    value: str
+
+
+class ProductDetailWithCharacteristicSchema(ProductDetailSchema):
+    characteristics: List[CharacteristicValueProductSchema]

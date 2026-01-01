@@ -1,6 +1,8 @@
 from typing import List, Sequence
 
 from fastapi import HTTPException, status
+from fastapi_pagination import Page
+from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy import select, Result, Select, delete
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,7 +14,7 @@ from app.product.schemas import (CategorySchema,
                                  CharacteristicSchema,
                                  ProductSchema,
                                  ProductCharacteristicSchema,
-                                 ProductCharacteristicSchemaUpdate)
+                                 ProductCharacteristicSchemaUpdate, ProductDetailSchema)
 from app.utils import check_type
 
 
@@ -135,6 +137,31 @@ class CategoryService:
 
 
 class ProductService:
+
+    @classmethod
+    async def list(cls, session: AsyncSession, category_id: int | None) -> Page[ProductDetailSchema]:
+        product_query: Select = select(Product)
+        if category_id:
+            product_query: Select = product_query.where(Product.category_id == category_id)
+        return await paginate(session, product_query)
+
+    @classmethod
+    async def detail(cls, session: AsyncSession, product_id: int, characteristics: bool = None) -> Product:
+        product_query: Select = select(Product).where(Product.id == product_id)
+        if characteristics:
+            product_query: Select = (
+                product_query
+                .options(
+                    selectinload(Product.characteristics)
+                    .load_only(CharacteristicProduct.id, CharacteristicProduct.value)
+                    .selectinload(CharacteristicProduct.characteristic)
+                    .load_only(Characteristic.id, Characteristic.title, Characteristic.unit)
+                )
+            )
+        product_result: Result = await session.execute(product_query)
+        product: Product = product_result.scalar_one_or_none()
+        return product
+
     @classmethod
     async def create(cls, session: AsyncSession, data: ProductSchema) -> Product:
         product = Product(**data.model_dump())
@@ -152,7 +179,7 @@ class ProductService:
         return product
 
     @classmethod
-    async def update(cls, session: AsyncSession, product_id: int, data: ProductSchema):
+    async def update(cls, session: AsyncSession, product_id: int, data: ProductSchema) -> Product:
         product = await session.get(Product, product_id)
         if not product:
             raise HTTPException(status_code=404, detail='Product not found')
