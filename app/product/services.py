@@ -222,7 +222,24 @@ class ProductService:
         await session.commit()
 
     @classmethod
-    async def add_characteristic(cls, session: AsyncSession, product_id: int, data: List[ProductCharacteristicSchema]):
+    async def get_characteristics(cls, session: AsyncSession, product_id: int) -> Sequence[CharacteristicProduct]:
+        characteristic_product_query: Select = (
+            select(CharacteristicProduct)
+            .where(CharacteristicProduct.product_id == product_id)
+            .options(
+                selectinload(CharacteristicProduct.characteristic)
+                .load_only(Characteristic.id, Characteristic.title, Characteristic.unit),
+            )
+        )
+        characteristic_product_result: Result = await session.execute(characteristic_product_query)
+        characteristics_product: Sequence[CharacteristicProduct] = characteristic_product_result.scalars().all()
+        return characteristics_product
+
+    @classmethod
+    async def add_characteristic(cls,
+                                 session: AsyncSession,
+                                 product_id: int,
+                                 data: List[ProductCharacteristicSchema]) -> Sequence[CharacteristicProduct]:
         product_characteristic = []
         characteristic_ids = []
         for characteristic in data:
@@ -266,13 +283,14 @@ class ProductService:
                 raise HTTPException(status_code=400, detail=message)
             if e.orig.pgcode == '23505':
                 raise HTTPException(status_code=400, detail='Duplication characteristic.')
+        return await cls.get_characteristics(session, product_id)
 
     @classmethod
     async def update_characteristic(cls,
                                     session: AsyncSession,
                                     product_id: int,
                                     data: List[ProductCharacteristicSchemaUpdate]
-                                    ):
+                                    ) -> Sequence[CharacteristicProduct]:
 
         product_characteristic_ids = [characteristic.id for characteristic in data]
         product_characteristic_query: Select = (
@@ -294,6 +312,7 @@ class ProductService:
                     break
 
         await session.commit()
+        return await cls.get_characteristics(session, product_id)
 
 
 def get_category_load_characteristic(query: Select):

@@ -74,3 +74,7 @@ class CharacteristicValueProductSchema(BaseModel):
 
 class ProductDetailWithCharacteristicSchema(ProductDetailSchema):
     characteristics: List[CharacteristicValueProductSchema]
+
+
+class CharacteristicProductValueSchema(ProductCharacteristicSchemaUpdate):
+    characteristic: CharacteristicProductSchema
