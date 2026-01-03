@@ -1,8 +1,9 @@
-from typing import Self
+from typing import Self, Literal
 
 from pydantic import BaseModel, field_validator, EmailStr, model_validator
 
 from app.validators import password_validator
+from app.user.models import role
 
 
 class RegistrationSchema(BaseModel):
@@ -35,3 +36,15 @@ class UserBaseSchema(BaseModel):
     first_name: str
     last_name: str
     is_active: bool
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class CurrentUserSchema(BaseModel):
+    id: int
+    email: EmailStr
+    first_name: str
+    last_name: str
+    role: role

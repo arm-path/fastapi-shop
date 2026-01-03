@@ -1,8 +1,11 @@
-from fastapi import APIRouter, status
+from typing import Annotated
+
+from fastapi import APIRouter, status, Depends
+from fastapi.security import OAuth2PasswordRequestForm
 
 from app.settings.database import SessionDepends
-from app.user.schemas import RegistrationSchema, UserBaseSchema, AuthSchema
-from app.user.services import AuthUserService
+from app.user.schemas import RegistrationSchema, Token, CurrentUserSchema
+from app.user.services import AuthUserService, CurrentUserDepends
 
 router = APIRouter(prefix='/users', tags=['User'])
 
@@ -11,6 +14,12 @@ router = APIRouter(prefix='/users', tags=['User'])
 async def registration(data: RegistrationSchema, session: SessionDepends):
     return await AuthUserService.registration(session, data)
 
-@router.post('/authentication/', response_model=UserBaseSchema)
-async def authentication(data: AuthSchema, session: SessionDepends):
+
+@router.post('/authentication/', response_model=Token)
+async def authentication(session: SessionDepends, data: Annotated[OAuth2PasswordRequestForm, Depends()]):
     return await AuthUserService.authentication(session, data)
+
+
+@router.get('/me/', response_model=CurrentUserSchema)
+async def me(user: CurrentUserDepends):
+    return user
