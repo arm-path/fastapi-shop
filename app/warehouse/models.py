@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Integer, String, Date, text, Float, DECIMAL, Computed
+from sqlalchemy import ForeignKey, Integer, String, Date, text, Float, DECIMAL, Computed, BigInteger
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.settings.database import Base
@@ -17,7 +17,7 @@ class Warehouse(Base):
 
 class Supplier(Base):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
-    inn: Mapped[int] = mapped_column(Integer, unique=True, nullable=False)
+    inn: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
     address: Mapped[str | None] = mapped_column(String(255), nullable=True)
     description: Mapped[str | None] = mapped_column(String(255), nullable=True)
 

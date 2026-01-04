@@ -11,6 +11,7 @@ from app.settings.database import Base
 from app.settings.settings import settings
 from app.product import Category, Product, Characteristic, CharacteristicProduct
 from app.user import User
+from app.warehouse import Warehouse, Supplies, Supplier, SuppliesProduct
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
