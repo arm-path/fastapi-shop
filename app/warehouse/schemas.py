@@ -1,3 +1,4 @@
+from datetime import date, datetime
 from typing import Annotated
 
 from pydantic import BaseModel, Field
@@ -19,3 +20,17 @@ class SupplierResponseSchema(SupplierCreateSchema):
 
 class SupplierListSchema(SupplierBaseSchema):
     id: int
+
+
+class SuppliesSchema(BaseModel):
+    document_number: str
+    document_data: date
+    supplier_id: int
+    draft: bool
+
+
+class SuppliesBaseResponseSchema(SuppliesSchema):
+    created: datetime
+    updated: datetime
+    id: int
+

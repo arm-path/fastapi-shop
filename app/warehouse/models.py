@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Integer, String, Date, text, Float, DECIMAL, Computed, BigInteger
+from sqlalchemy import ForeignKey, Integer, String, Date, text, Float, DECIMAL, Computed, BigInteger, Boolean
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.settings.database import Base
@@ -27,7 +27,10 @@ class Supplies(Base):
     supplier_id: Mapped[int] = mapped_column(ForeignKey('supplier.id', ondelete='RESTRICT'), nullable=False)
     document_data: Mapped[date] = mapped_column(Date)
     created: Mapped[datetime] = mapped_column(server_default=text("TIMEZONE('utc', now())"))
-    user_id: Mapped[int | None] = mapped_column(ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    updated: Mapped[datetime] = mapped_column(server_default=text("TIMEZONE('utc', now())"), onupdate=datetime.utcnow)
+    create_user_id: Mapped[int | None] = mapped_column(ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    update_user_id: Mapped[int | None] = mapped_column(ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    draft: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 class SuppliesProduct(Base):
