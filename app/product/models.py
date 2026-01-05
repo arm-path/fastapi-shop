@@ -1,4 +1,4 @@
-from typing import Literal, List
+from typing import Literal, List, TYPE_CHECKING
 
 from slugify import slugify
 from sqlalchemy import String, event, ForeignKey, Numeric, Integer, UniqueConstraint
@@ -7,6 +7,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.settings.database import Base
 
+if TYPE_CHECKING:
+    from app.warehouse.models import SuppliesProduct
 
 class Category(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -30,6 +32,7 @@ class Product(Base):
     description: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     characteristics: Mapped[List['CharacteristicProduct']] = relationship(back_populates='product')
+    supplies_documents: Mapped[List['SuppliesProduct']] = relationship(back_populates='supplies_product')
 
 
 class Characteristic(Base):

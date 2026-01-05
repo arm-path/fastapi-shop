@@ -1,13 +1,21 @@
+from typing import Literal
+
 from fastapi import HTTPException
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from pydantic import TYPE_CHECKING
-from sqlalchemy import Select, select
+from sqlalchemy import Select, select, Result
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from app.warehouse.models import Supplier, Supplies
-from app.warehouse.schemas import SupplierCreateSchema, SupplierListSchema, SuppliesSchema
+from app.product import Product
+from app.warehouse.models import Supplier, Supplies, SuppliesProduct
+from app.warehouse.schemas import (SupplierCreateSchema,
+                                   SupplierListSchema,
+                                   SuppliesSchema,
+                                   SuppliesWithSuppliersSchema
+                                   )
 
 if TYPE_CHECKING:
     from app.user.models import User
@@ -66,6 +74,52 @@ class SupplierService:
 
 class SuppliesService:
     @classmethod
+    async def list(cls,
+                   session: AsyncSession,
+                   draft: bool = None,
+                   supplier_id: int = None,
+                   document_number: str = None,
+                   ordering: Literal['created', 'document_data', '-created', '-document_data'] = None
+                   ) -> Page[SuppliesWithSuppliersSchema]:
+        supplies_query: Select = select(Supplies).options(selectinload(Supplies.supplier))
+        if not draft is None:
+            supplies_query: Select = supplies_query.where(Supplies.draft == draft)
+        if supplier_id:
+            supplies_query: Select = supplies_query.where(Supplies.supplier_id == supplier_id)
+        if document_number:
+            supplies_query: Select = supplies_query.where(Supplies.document_number.like(f'%{document_number}%'))
+        if ordering:
+            if ordering == 'created':
+                supplies_query: Select = supplies_query.order_by(Supplies.created)
+            if ordering == '-created':
+                supplies_query: Select = supplies_query.order_by(Supplies.created.desc())
+            if ordering == 'document_data':
+                supplies_query: Select = supplies_query.order_by(Supplies.document_data)
+            if ordering == '-document_data':
+                supplies_query: Select = supplies_query.order_by(Supplies.document_data.desc())
+        return await paginate(session, supplies_query)
+
+    @classmethod
+    async def detail(cls, session: AsyncSession, supplies_id: int) -> Supplies:
+        supplies_query: Select = (
+            select(Supplies)
+            .where(Supplies.id == supplies_id)
+            .options(selectinload(Supplies.products)
+                     .load_only(SuppliesProduct.id,
+                                SuppliesProduct.quantity,
+                                SuppliesProduct.price,
+                                SuppliesProduct.total
+                                )
+                     .selectinload(SuppliesProduct.supplies_product)
+                     .load_only(Product.id, Product.title))
+        )
+        supplies_result: Result = await session.execute(supplies_query)
+        supplies: Supplies | None = supplies_result.scalar_one_or_none()
+        if not supplies:
+            raise HTTPException(status_code=404, detail='Document not found')
+        return supplies
+
+    @classmethod
     async def create(cls, session: AsyncSession, user: User, data: SuppliesSchema) -> Supplies:
         data_supplies = data.model_dump()
         data_supplies['create_user_id'] = user.id
@@ -86,6 +140,7 @@ class SuppliesService:
         supplies.update_user_id = user.id
         supplies.draft = data.draft
         await session.commit()
+        # TODO: Update Product in Warehouse.
         return supplies
 
     @classmethod
@@ -94,3 +149,4 @@ class SuppliesService:
         if not supplies:
             raise HTTPException(status_code=404, detail='Document not found')
         await session.delete(supplies)
+        # TODO: Update Product in Warehouse.

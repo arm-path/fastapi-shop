@@ -1,8 +1,8 @@
 from datetime import date, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 from sqlalchemy import ForeignKey, Integer, String, Date, text, Float, DECIMAL, Computed, BigInteger, Boolean
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.settings.database import Base
 
@@ -21,6 +21,8 @@ class Supplier(Base):
     address: Mapped[str | None] = mapped_column(String(255), nullable=True)
     description: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
+    documents: Mapped[List['Supplies']] = relationship(back_populates='supplier')
+
 
 class Supplies(Base):
     document_number: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -32,6 +34,9 @@ class Supplies(Base):
     update_user_id: Mapped[int | None] = mapped_column(ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
     draft: Mapped[bool] = mapped_column(Boolean, default=False)
 
+    supplier: Mapped['Supplier'] = relationship(back_populates='documents')
+    products: Mapped[List['SuppliesProduct']] = relationship(back_populates='supplies')
+
 
 class SuppliesProduct(Base):
     supplies_id: Mapped[int] = mapped_column(ForeignKey('supplies.id', ondelete='RESTRICT'), nullable=False)
@@ -39,3 +44,6 @@ class SuppliesProduct(Base):
     quantity: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     price: Mapped[float] = mapped_column(DECIMAL(10, 2), nullable=False)
     total: Mapped[float] = mapped_column(DECIMAL(10, 2), Computed(price * quantity))
+
+    supplies: Mapped['Supplies'] = relationship(back_populates='products')
+    supplies_product: Mapped['Product'] = relationship(back_populates='supplies_documents')

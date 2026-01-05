@@ -34,3 +34,6 @@ class SuppliesBaseResponseSchema(SuppliesSchema):
     updated: datetime
     id: int
 
+class SuppliesWithSuppliersSchema(SuppliesBaseResponseSchema):
+    supplier: SupplierListSchema
+
