@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import TYPE_CHECKING, List
 
-from sqlalchemy import ForeignKey, Integer, String, Date, text, Float, DECIMAL, Computed, BigInteger, Boolean
+from sqlalchemy import ForeignKey, Integer, String, Date, text, DECIMAL, Computed, BigInteger, Boolean, event
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.settings.database import Base
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 class Warehouse(Base):
-    product_id: Mapped[int] = mapped_column(ForeignKey('product.id'))
+    product_id: Mapped[int] = mapped_column(ForeignKey('product.id'), unique=True)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)
 
 

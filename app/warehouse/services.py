@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, List
 
 from fastapi import HTTPException
 from fastapi_pagination import Page
@@ -14,7 +14,7 @@ from app.warehouse.models import Supplier, Supplies, SuppliesProduct
 from app.warehouse.schemas import (SupplierCreateSchema,
                                    SupplierListSchema,
                                    SuppliesSchema,
-                                   SuppliesWithSuppliersSchema
+                                   SuppliesWithSuppliersSchema, SuppliesAddProductSchema
                                    )
 
 if TYPE_CHECKING:
@@ -150,3 +150,26 @@ class SuppliesService:
             raise HTTPException(status_code=404, detail='Document not found')
         await session.delete(supplies)
         # TODO: Update Product in Warehouse.
+
+    @classmethod
+    async def add_products(cls,
+                           session: AsyncSession,
+                           user: User, supplies_id: int,
+                           data: List[SuppliesAddProductSchema]
+                           ):
+        supplies: Supplies | None = await session.get(Supplies, supplies_id)
+        if not supplies:
+            raise HTTPException(status_code=404, detail='Supplies not found')
+        supplies_products = []
+        for supplies_product in data:
+            supplies_product_dict = supplies_product.__dict__
+            supplies_product_dict['supplies_id'] = supplies_id
+            supplies_products.append(SuppliesProduct(**supplies_product_dict))
+        session.add_all(supplies_products)
+
+        try:
+            supplies.update_user_id = user.id
+            await session.commit()
+        except Exception as e:
+            await session.rollback()
+            print('ERR: SuppliesService.add_products ->', e)

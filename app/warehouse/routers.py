@@ -1,4 +1,4 @@
-from typing import Annotated, Literal
+from typing import Annotated, Literal, List
 
 from fastapi import APIRouter, status, Query
 from fastapi_pagination import Page
@@ -6,7 +6,7 @@ from fastapi_pagination import Page
 from app.settings.database import SessionDepends
 from app.user.services import InstallerUserDepends
 from app.warehouse.schemas import SupplierCreateSchema, SupplierResponseSchema, SupplierListSchema, SuppliesSchema, \
-    SuppliesBaseResponseSchema, SuppliesWithSuppliersSchema
+    SuppliesBaseResponseSchema, SuppliesWithSuppliersSchema, SuppliesAddProductSchema
 from app.warehouse.services import SupplierService, SuppliesService
 
 router = APIRouter(prefix='/warehouse', tags=['warehouse'])
@@ -67,3 +67,10 @@ async def supplies_update(session: SessionDepends, user: InstallerUserDepends, s
 @router.delete('/supplies/{supplies_id}/delete-document/', status_code=status.HTTP_204_NO_CONTENT)
 async def supplies_delete(session: SessionDepends, user: InstallerUserDepends, supplies_id: int):
     await SuppliesService.delete(session, user, supplies_id)
+
+@router.post('/supplies/add-products/{supplies_id}/')
+async def supplies_add_products(session: SessionDepends,
+                                user: InstallerUserDepends,
+                                supplies_id: int, data: List[SuppliesAddProductSchema]
+                                ):
+    await SuppliesService.add_products(session, user, supplies_id, data)

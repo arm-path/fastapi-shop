@@ -37,3 +37,7 @@ class SuppliesBaseResponseSchema(SuppliesSchema):
 class SuppliesWithSuppliersSchema(SuppliesBaseResponseSchema):
     supplier: SupplierListSchema
 
+class SuppliesAddProductSchema(BaseModel):
+    product_id: int
+    quantity: int
+    price: float
