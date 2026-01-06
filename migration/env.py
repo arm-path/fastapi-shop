@@ -13,6 +13,23 @@ from app.product import Category, Product, Characteristic, CharacteristicProduct
 from app.user import User
 from app.warehouse import Warehouse, Supplies, Supplier, SuppliesProduct
 
+from alembic_utils.replaceable_entity import register_entities
+from app.settings.triggers import (
+    update_warehouse_from_supplies,
+    trg_supplies_product_insert,
+    trg_supplies_product_update,
+    trg_supplies_product_delete
+)
+
+register_entities(
+    [
+        trg_supplies_product_insert,
+        trg_supplies_product_update,
+        trg_supplies_product_delete,
+        update_warehouse_from_supplies
+    ]
+)
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
