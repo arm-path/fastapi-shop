@@ -40,7 +40,7 @@ class Supplies(Base):
 
 
 class SuppliesProduct(Base):
-    supplies_id: Mapped[int] = mapped_column(ForeignKey('supplies.id', ondelete='RESTRICT'), nullable=False)
+    supplies_id: Mapped[int] = mapped_column(ForeignKey('supplies.id', ondelete='CASCADE'), nullable=False)
     product_id: Mapped[int] = mapped_column(ForeignKey('product.id', ondelete='RESTRICT'), nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     price: Mapped[float] = mapped_column(DECIMAL(10, 2), nullable=False)

@@ -18,7 +18,9 @@ from app.settings.triggers import (
     update_warehouse_from_supplies,
     trg_supplies_product_insert,
     trg_supplies_product_update,
-    trg_supplies_product_delete
+    trg_supplies_product_delete,
+    update_warehouse_draft_supplies,
+    trg_supplies_update
 )
 
 register_entities(
@@ -26,7 +28,9 @@ register_entities(
         trg_supplies_product_insert,
         trg_supplies_product_update,
         trg_supplies_product_delete,
-        update_warehouse_from_supplies
+        update_warehouse_from_supplies,
+        update_warehouse_draft_supplies,
+        trg_supplies_update
     ]
 )
 
