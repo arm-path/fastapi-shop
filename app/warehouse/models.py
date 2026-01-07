@@ -1,7 +1,8 @@
 from datetime import date, datetime
 from typing import TYPE_CHECKING, List
 
-from sqlalchemy import ForeignKey, Integer, String, Date, text, DECIMAL, Computed, BigInteger, Boolean, event
+from sqlalchemy import ForeignKey, Integer, String, Date, text, DECIMAL, Computed, BigInteger, Boolean, event, \
+    UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.settings.database import Base
@@ -47,3 +48,7 @@ class SuppliesProduct(Base):
 
     supplies: Mapped['Supplies'] = relationship(back_populates='products')
     supplies_product: Mapped['Product'] = relationship(back_populates='supplies_documents')
+
+    __table_args__ = (
+        UniqueConstraint('supplies_id', 'product_id', name='uq_supplies_product__supplies_product'),
+    )

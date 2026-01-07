@@ -156,7 +156,7 @@ class SuppliesService:
                            session: AsyncSession,
                            user: User, supplies_id: int,
                            data: List[SuppliesAddProductSchema]
-                           ):
+                           ) -> Supplies:
         supplies: Supplies | None = await session.get(Supplies, supplies_id)
         if not supplies:
             raise HTTPException(status_code=404, detail='Supplies not found')
@@ -170,6 +170,41 @@ class SuppliesService:
         try:
             supplies.update_user_id = user.id
             await session.commit()
+        except IntegrityError as e:
+            await session.rollback()
+            if e.orig.pgcode == '23505':
+                raise HTTPException(status_code=400, detail='Violation unique product_id & supplies_id.')
+            if e.orig.pgcode == '23503':
+                raise HTTPException(status_code=400, detail='Product not found.')
         except Exception as e:
             await session.rollback()
             print('ERR: SuppliesService.add_products ->', e)
+        return await cls.detail(session, supplies_id)
+
+    @classmethod
+    async def update_product(cls,
+                             session: AsyncSession,
+                             user: User,
+                             supplies_product_id: int,
+                             data: SuppliesAddProductSchema
+                             ):
+        supplies_product: SuppliesProduct | None = await session.get(SuppliesProduct, supplies_product_id)
+        if not supplies_product:
+            raise HTTPException(status_code=404, detail='Product in supplies not found.')
+        supplies_product.product_id = data.product_id
+        supplies_product.quantity = data.quantity
+        supplies_product.price = data.price
+        try:
+            supplies: Supplies | None = await session.get(Supplies, supplies_product.supplies_id)
+            supplies.update_user_id = user.id
+            await session.commit()
+        except IntegrityError as e:
+            await session.rollback()
+            if e.orig.pgcode == '23505':
+                raise HTTPException(status_code=400, detail='Violation unique product_id & supplies_id.')
+            if e.orig.pgcode == '23503':
+                raise HTTPException(status_code=400, detail='Product not found')
+        except Exception as e:
+            await session.rollback()
+            print('ERR: SuppliesService.update_product ->', e)
+        return supplies_product

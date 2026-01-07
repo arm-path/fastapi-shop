@@ -68,9 +68,16 @@ async def supplies_update(session: SessionDepends, user: InstallerUserDepends, s
 async def supplies_delete(session: SessionDepends, user: InstallerUserDepends, supplies_id: int):
     await SuppliesService.delete(session, user, supplies_id)
 
+
 @router.post('/supplies/add-products/{supplies_id}/')
 async def supplies_add_products(session: SessionDepends,
                                 user: InstallerUserDepends,
                                 supplies_id: int, data: List[SuppliesAddProductSchema]
                                 ):
-    await SuppliesService.add_products(session, user, supplies_id, data)
+    return await SuppliesService.add_products(session, user, supplies_id, data)
+
+@router.put('/supplies/update-product/{supplies_product_id}/')
+async def supplies_update_products(session: SessionDepends,
+                                   user: InstallerUserDepends,
+                                   supplies_product_id: int, data: SuppliesAddProductSchema):
+    return await SuppliesService.update_product(session, user, supplies_product_id, data)
