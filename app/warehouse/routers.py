@@ -5,8 +5,13 @@ from fastapi_pagination import Page
 
 from app.settings.database import SessionDepends
 from app.user.services import InstallerUserDepends
-from app.warehouse.schemas import SupplierCreateSchema, SupplierResponseSchema, SupplierListSchema, SuppliesSchema, \
-    SuppliesBaseResponseSchema, SuppliesWithSuppliersSchema, SuppliesAddProductSchema
+from app.warehouse.schemas import (SupplierCreateSchema,
+                                   SupplierResponseSchema,
+                                   SupplierListSchema,
+                                   SuppliesSchema,
+                                   SuppliesBaseResponseSchema,
+                                   SuppliesWithSuppliersSchema,
+                                   SuppliesAddProductSchema)
 from app.warehouse.services import SupplierService, SuppliesService
 
 router = APIRouter(prefix='/warehouse', tags=['warehouse'])
@@ -76,8 +81,16 @@ async def supplies_add_products(session: SessionDepends,
                                 ):
     return await SuppliesService.add_products(session, user, supplies_id, data)
 
+
 @router.put('/supplies/update-product/{supplies_product_id}/')
 async def supplies_update_products(session: SessionDepends,
                                    user: InstallerUserDepends,
                                    supplies_product_id: int, data: SuppliesAddProductSchema):
     return await SuppliesService.update_product(session, user, supplies_product_id, data)
+
+
+@router.delete('/supplies/delete-product/{supplies_product_id}/')
+async def supplies_delete_product(session: SessionDepends,
+                                  user: InstallerUserDepends,
+                                  supplies_product_id: int):
+    return await SuppliesService.delete_product(session, supplies_product_id)

@@ -96,7 +96,7 @@ BEGIN
                     UPDATE warehouse w
                     SET quantity = w.quantity + sp.quantity
                     FROM supplies_product sp
-                    WHERE sp.supplies_id = 4 AND w.product_id = sp.product_id;
+                    WHERE sp.supplies_id = NEW.id AND w.product_id = sp.product_id;
                 END IF;
             END IF;
         END IF;

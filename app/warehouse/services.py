@@ -4,7 +4,7 @@ from fastapi import HTTPException
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from pydantic import TYPE_CHECKING
-from sqlalchemy import Select, select, Result, delete
+from sqlalchemy import Select, select, Result, delete, Delete
 from sqlalchemy.exc import IntegrityError, DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -164,8 +164,8 @@ class SuppliesService:
         supplies = await session.get(Supplies, supplier_id)
         if not supplies:
             raise HTTPException(status_code=404, detail='Document not found')
-        await session.execute(delete(Supplies).where(Supplies.id == supplier_id))
         try:
+            await session.execute(delete(Supplies).where(Supplies.id == supplier_id))
             await session.commit()
         except DBAPIError as e:
             await session.rollback()
@@ -235,3 +235,9 @@ class SuppliesService:
             await session.rollback()
             print('ERR: SuppliesService.update_product ->', e)
         return supplies_product
+
+    @classmethod
+    async def delete_product(cls, session: AsyncSession, supplies_product_id: int) -> None:
+        delete_query: Delete = delete(SuppliesProduct).where(SuppliesProduct.id == supplies_product_id)
+        await session.execute(delete_query)
+        await session.commit()
