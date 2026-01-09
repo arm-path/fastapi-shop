@@ -5,7 +5,7 @@ from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from pydantic import TYPE_CHECKING
 from sqlalchemy import Select, select, Result, delete
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -139,8 +139,24 @@ class SuppliesService:
         supplies.supplier_id = data.supplier_id
         supplies.update_user_id = user.id
         supplies.draft = data.draft
-        await session.commit()
-        # TODO: Update Product in Warehouse.
+        try:
+            await session.commit()
+        except IntegrityError as e:
+            await session.rollback()
+            if e.orig.pgcode == '23503':
+                raise HTTPException(status_code=400, detail='Supplier not found.')
+            print('ERR: SuppliesService.update -> ', e)
+            raise HTTPException(status_code=500, detail='Database Error')
+        except DBAPIError as e:
+            await session.rollback()
+            error_message = e.orig.__cause__.args[0]
+            if error_message and type(error_message) == str and 'not enough goods in the warehouse' in error_message:
+                raise HTTPException(status_code=400, detail=e.orig.__cause__.args[0])
+            print('ERR: SuppliesService.update -> ', e)
+            raise HTTPException(status_code=500, detail='Database Error')
+        except Exception as e:
+            print('ERR: SuppliesService.update -> ', e)
+            raise HTTPException(status_code=500, detail='Database Error')
         return supplies
 
     @classmethod
@@ -149,8 +165,18 @@ class SuppliesService:
         if not supplies:
             raise HTTPException(status_code=404, detail='Document not found')
         await session.execute(delete(Supplies).where(Supplies.id == supplier_id))
-        await session.commit()
-        # TODO: Update Product in Warehouse.
+        try:
+            await session.commit()
+        except DBAPIError as e:
+            await session.rollback()
+            error_message = e.orig.__cause__.args[0]
+            if error_message and type(error_message) == str and 'not enough goods in the warehouse' in error_message:
+                raise HTTPException(status_code=400, detail=e.orig.__cause__.args[0])
+            print('ERR: SuppliesService.update -> ', e)
+            raise HTTPException(status_code=500, detail='Database Error')
+        except Exception as e:
+            print('ERR: SuppliesService.update -> ', e)
+            raise HTTPException(status_code=500, detail='Database Error')
 
     @classmethod
     async def add_products(cls,

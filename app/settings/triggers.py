@@ -23,7 +23,7 @@ BEGIN
         WHERE product_id = OLD.product_id;
 
         IF (SELECT quantity FROM warehouse WHERE product_id = OLD.product_id) < 0 THEN
-            RAISE EXCEPTION 'Not enough supplies to remove the cargo';
+            RAISE EXCEPTION 'There are not enough goods in the warehouse for delete document';
         END IF;
     END IF;
 
