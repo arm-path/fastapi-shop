@@ -23,8 +23,6 @@ class Warehouse(Base):
     title: Mapped[str] = mapped_column(String(91), unique=True, nullable=False)
     address: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
-    supplier_documents: Mapped[List['Supplies']] = relationship(back_populates='warehouse')
-
 
 class WarehouseProduct(Base):
     warehouse_id: Mapped[int] = mapped_column(
@@ -65,7 +63,6 @@ class Supplies(Base):
     draft: Mapped[bool] = mapped_column(Boolean, default=False)
 
     supplier: Mapped['Supplier'] = relationship(back_populates='documents')
-    warehouse: Mapped['Warehouse'] = relationship(back_populates='supplier_documents')
     products: Mapped[List['SuppliesProduct']] = relationship(back_populates='supplies')
 
 

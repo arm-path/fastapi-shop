@@ -42,7 +42,6 @@ class ProductSchema(BaseModel):
     title: str
     category_id: int
     price: float
-    discount: int
     description: str | None = None
 
 

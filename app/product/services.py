@@ -67,7 +67,7 @@ class CategoryService:
 
     @classmethod
     async def delete(cls, session: AsyncSession, category_id: int) -> None:
-        category = session.get(Category, category_id)
+        category = await session.get(Category, category_id)
         if not category:
             raise HTTPException(status_code=404, detail='Category not found.')
         await session.delete(category)
@@ -189,7 +189,6 @@ class ProductService:
         product.title = data.title
         product.category_id = data.category_id
         product.price = data.price
-        product.discount = data.discount
         product.description = data.description
 
         try:
@@ -271,7 +270,7 @@ class ProductService:
         if not product:
             raise HTTPException(status_code=404, detail='Product not found.')
 
-        if product.category_id != category_ids[0]:
+        if category_ids and product.category_id != category_ids[0]:
             raise HTTPException(status_code=400, detail='Characteristics do not belong to the products.')
 
         try:

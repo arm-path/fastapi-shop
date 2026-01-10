@@ -13,12 +13,12 @@ class RegistrationSchema(BaseModel):
     password: str
     password_repeat: str
 
-    @field_validator('password')
-    @classmethod
-    def check_password_validate(cls, value: str):
-        if not password_validator(value):
-            raise ValueError('Password complexity violation.')
-        return value
+    # @field_validator('password')
+    # @classmethod
+    # def check_password_validate(cls, value: str):
+    #     if not password_validator(value):
+    #         raise ValueError('Password complexity violation.')
+    #     return value
 
     @model_validator(mode='after')
     def check_passwords_match(self) -> Self:

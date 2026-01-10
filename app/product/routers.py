@@ -16,6 +16,7 @@ from app.product.schemas import (CategorySchema,
                                  CharacteristicProductValueSchema)
 from app.product.services import CategoryService, ProductService
 from app.settings.database import SessionDepends
+from app.user.services import InstallerUserDepends
 
 category_router = APIRouter(prefix='/category')
 product_router = APIRouter(prefix='/product')
@@ -34,42 +35,43 @@ async def category_detail(category_id: int, session: SessionDepends, characteris
 
 
 @category_router.post('/create/', response_model=CategoryItemSchema)
-async def category_create(data: CategorySchema, session: SessionDepends):
+async def category_create(data: CategorySchema, session: SessionDepends, user: InstallerUserDepends):
     return await CategoryService.create(session, data)
 
 
 @category_router.put('/update/{category_id}/', response_model=CategoryItemSchema)
-async def category_update(category_id: int, data: CategorySchema, session: SessionDepends):
+async def category_update(category_id: int, data: CategorySchema, session: SessionDepends, user: InstallerUserDepends):
     return await CategoryService.update(session, category_id, data)
 
 
 @category_router.delete('/delete/{category_id}/', status_code=status.HTTP_204_NO_CONTENT)
-async def category_delete(category_id: int, session: SessionDepends):
+async def category_delete(category_id: int, session: SessionDepends, user: InstallerUserDepends):
     await CategoryService.delete(session, category_id)
 
 
 @category_router.get('/list-characteristics/{category_id}/', response_model=List[CharacteristicDetailSchema])
-async def list_characteristics(category_id: int, session: SessionDepends):
+async def list_characteristics(category_id: int, session: SessionDepends, user: InstallerUserDepends):
     return await CategoryService.get_characteristic(session, category_id)
 
 
 @category_router.post('/create-characteristics/{category_id}/', response_model=List[CharacteristicDetailSchema])
 async def create_characteristics(category_id: int,
                                  data: List[CharacteristicSchema],
-                                 session: SessionDepends):
+                                 session: SessionDepends,
+                                 user: InstallerUserDepends):
     return await CategoryService.add_characteristic(session, category_id, data)
 
 
 @category_router.put('/update-characteristic/{characteristic_id}/', response_model=CharacteristicDetailSchema)
 async def update_characteristics(characteristic_id: int,
                                  data: CharacteristicSchema,
-                                 session: SessionDepends
-                                 ):
+                                 session: SessionDepends,
+                                 user: InstallerUserDepends):
     return await CategoryService.update_characteristic(session, characteristic_id, data)
 
 
 @category_router.delete('/delete-characteristic/{characteristic_id}/', status_code=status.HTTP_204_NO_CONTENT)
-async def delete_characteristic(characteristic_id: int, session: SessionDepends):
+async def delete_characteristic(characteristic_id: int, session: SessionDepends, user: InstallerUserDepends):
     await CategoryService.delete_characteristic(session, characteristic_id)
 
 
@@ -85,17 +87,17 @@ async def detail_product(session: SessionDepends, product_id: int, characteristi
 
 
 @product_router.post('/create/', response_model=ProductDetailSchema)
-async def create_product(data: ProductSchema, session: SessionDepends):
+async def create_product(data: ProductSchema, session: SessionDepends, user: InstallerUserDepends):
     return await ProductService.create(session, data)
 
 
 @product_router.put('/update/{product_id}/', response_model=ProductDetailSchema)
-async def update_product(data: ProductSchema, product_id: int, session: SessionDepends):
+async def update_product(data: ProductSchema, product_id: int, session: SessionDepends, user: InstallerUserDepends):
     return await ProductService.update(session, product_id, data)
 
 
 @product_router.delete('/delete/{product_id}/', status_code=status.HTTP_204_NO_CONTENT)
-async def delete_product(product_id: int, session: SessionDepends):
+async def delete_product(product_id: int, session: SessionDepends, user: InstallerUserDepends):
     return await ProductService.delete(session, product_id)
 
 
@@ -107,13 +109,14 @@ async def get_product_characteristics(product_id: int, session: SessionDepends):
 @product_router.post('/create-characteristics/{product_id}/', response_model=List[CharacteristicProductValueSchema])
 async def create_product_characteristic(product_id: int,
                                         data: List[ProductCharacteristicSchema],
-                                        session: SessionDepends
-                                        ):
+                                        session: SessionDepends,
+                                        user: InstallerUserDepends):
     return await ProductService.add_characteristic(session, product_id, data)
 
 
 @product_router.put('/update-characteristics/{product_id}/', response_model=List[CharacteristicProductValueSchema])
 async def update_product_characteristic(product_id: int,
                                         data: List[ProductCharacteristicSchemaUpdate],
-                                        session: SessionDepends):
+                                        session: SessionDepends,
+                                        user: InstallerUserDepends):
     return await ProductService.update_characteristic(session, product_id, data)
