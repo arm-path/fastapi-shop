@@ -1,12 +1,11 @@
 from datetime import date, datetime
-from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class SupplierBaseSchema(BaseModel):
     title: str
-    inn: int = Annotated[int, Field(max_digits=12)]
+    inn: str
 
 
 class SupplierCreateSchema(SupplierBaseSchema):
@@ -26,6 +25,7 @@ class SuppliesSchema(BaseModel):
     document_number: str
     document_data: date
     supplier_id: int
+    warehouse_id: int
     draft: bool
 
 
@@ -34,8 +34,10 @@ class SuppliesBaseResponseSchema(SuppliesSchema):
     updated: datetime
     id: int
 
+
 class SuppliesWithSuppliersSchema(SuppliesBaseResponseSchema):
     supplier: SupplierListSchema
+
 
 class SuppliesAddProductSchema(BaseModel):
     product_id: int

@@ -137,6 +137,7 @@ class SuppliesService:
         supplies.document_number = data.document_number
         supplies.document_data = data.document_data
         supplies.supplier_id = data.supplier_id
+        supplies.warehouse_id = data.warehouse_id
         supplies.update_user_id = user.id
         supplies.draft = data.draft
         try:
@@ -144,6 +145,7 @@ class SuppliesService:
         except IntegrityError as e:
             await session.rollback()
             if e.orig.pgcode == '23503':
+                # TODO: Warehouse not found?
                 raise HTTPException(status_code=400, detail='Supplier not found.')
             print('ERR: SuppliesService.update -> ', e)
             raise HTTPException(status_code=500, detail='Database Error')

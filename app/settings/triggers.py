@@ -6,8 +6,8 @@ RETURNS TRIGGER AS $$
 BEGIN
     IF (TG_OP = 'INSERT' OR TG_OP = 'UPDATE') THEN
         IF (TG_OP = 'UPDATE') THEN
-            UPDATE warehouse
-            SET quantity = warehouse.quantity - OLD.quantity
+            UPDATE warehouse_product
+            SET quantity = warehouse_product.quantity - OLD.quantity
             WHERE product_id = OLD.product_id;
         END IF;
 

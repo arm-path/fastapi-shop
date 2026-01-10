@@ -11,28 +11,29 @@ from app.settings.database import Base
 from app.settings.settings import settings
 from app.product import Category, Product, Characteristic, CharacteristicProduct
 from app.user import User
-from app.warehouse import Warehouse, Supplies, Supplier, SuppliesProduct
+from app.warehouse import Warehouse, WarehouseProduct, Supplies, Supplier, SuppliesProduct
+from app.order import Order, OrderProduct, Station
 
 from alembic_utils.replaceable_entity import register_entities
-from app.settings.triggers import (
-    update_warehouse_from_supplies,
-    trg_supplies_product_insert,
-    trg_supplies_product_update,
-    trg_supplies_product_delete,
-    update_warehouse_draft_supplies,
-    trg_supplies_update
-)
-
-register_entities(
-    [
-        trg_supplies_product_insert,
-        trg_supplies_product_update,
-        trg_supplies_product_delete,
-        update_warehouse_from_supplies,
-        update_warehouse_draft_supplies,
-        trg_supplies_update
-    ]
-)
+# from app.settings.triggers import (
+#     update_warehouse_from_supplies,
+#     trg_supplies_product_insert,
+#     trg_supplies_product_update,
+#     trg_supplies_product_delete,
+#     update_warehouse_draft_supplies,
+#     trg_supplies_update
+# )
+# TODO: Изменить триггер подсчета на складе.
+# register_entities(
+#     [
+#         trg_supplies_product_insert,
+#         trg_supplies_product_update,
+#         trg_supplies_product_delete,
+#         update_warehouse_from_supplies,
+#         update_warehouse_draft_supplies,
+#         trg_supplies_update
+#     ]
+# )
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
