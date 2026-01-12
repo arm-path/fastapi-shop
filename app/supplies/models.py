@@ -19,27 +19,6 @@ if TYPE_CHECKING:
     from app.product import Product
 
 
-class Warehouse(Base):
-    title: Mapped[str] = mapped_column(String(91), unique=True, nullable=False)
-    address: Mapped[str | None] = mapped_column(String(255), nullable=True)
-
-
-class WarehouseProduct(Base):
-    warehouse_id: Mapped[int] = mapped_column(
-        ForeignKey('warehouse.id', ondelete='RESTRICT'),
-        index=True, unique=True
-    )
-    product_id: Mapped[int] = mapped_column(
-        ForeignKey('product.id', ondelete='RESTRICT'),
-        index=True, unique=True
-    )
-    quantity: Mapped[int] = mapped_column(Integer, nullable=False)
-
-    product: Mapped[Product] = relationship(back_populates='warehouses')
-
-    __table_args__ = (CheckConstraint('quantity > 0', name='chk_warehouse_product_quantity'),)
-
-
 class Supplier(Base):
     title: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
     inn: Mapped[str] = mapped_column(String(12), unique=True, index=True, nullable=False)
@@ -54,7 +33,6 @@ class Supplier(Base):
 class Supplies(Base):
     document_number: Mapped[str] = mapped_column(String(61), nullable=False)
     supplier_id: Mapped[int] = mapped_column(ForeignKey('supplier.id', ondelete='RESTRICT'), nullable=False)
-    warehouse_id: Mapped[int] = mapped_column(ForeignKey('warehouse_product.id', ondelete='RESTRICT'))
     document_data: Mapped[date] = mapped_column(Date, nullable=False)
     created: Mapped[datetime] = mapped_column(server_default=text("TIMEZONE('utc', now())"))
     updated: Mapped[datetime] = mapped_column(server_default=text("TIMEZONE('utc', now())"), onupdate=datetime.utcnow)

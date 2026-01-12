@@ -1,15 +1,14 @@
 from typing import Literal, List, TYPE_CHECKING
 
 from slugify import slugify
-from sqlalchemy import String, event, ForeignKey, Numeric, UniqueConstraint, CheckConstraint
+from sqlalchemy import String, event, ForeignKey, Numeric, UniqueConstraint, CheckConstraint, Integer
 from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.settings.database import Base
 
 if TYPE_CHECKING:
-    from app.warehouse.models import SuppliesProduct
-    from app.warehouse.models import WarehouseProduct
+    from app.supplies.models import SuppliesProduct
 
 CHARACTERISTIC_TYPE: list[str] = ['integer', 'float', 'string', 'boolean']
 
@@ -35,12 +34,12 @@ class Product(Base):
         ForeignKey('category.id', ondelete='CASCADE'),
         index=True, nullable=False
     )
+    quantity: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     price: Mapped[float] = mapped_column(Numeric(10, 2), default=0.0)
     description: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     characteristics: Mapped[List['CharacteristicProduct']] = relationship(back_populates='product')
     supplies_documents: Mapped[List['SuppliesProduct']] = relationship(back_populates='supplies_product')
-    warehouses: Mapped[List[WarehouseProduct]] = relationship(back_populates='product')
 
     __table_args__ = (CheckConstraint('price > 0', name='chk_product_price'),)
 

@@ -7,7 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.settings.database import Base
 
-ORDER_STATUS = Literal['accepted', 'assembled', 'moving warehouse', 'delivery', 'delivered', 'completed', 'cancelled']
+ORDER_STATUS = Literal['accepted', 'assembled', 'moving supplies', 'delivery', 'delivered', 'completed', 'cancelled']
 
 
 class Station(Base):

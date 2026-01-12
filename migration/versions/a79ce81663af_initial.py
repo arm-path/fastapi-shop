@@ -1,8 +1,8 @@
 """Initial
 
-Revision ID: fd7f10ba8648
+Revision ID: a79ce81663af
 Revises: 
-Create Date: 2026-01-10 18:56:19.587886
+Create Date: 2026-01-12 19:26:53.282303
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = 'fd7f10ba8648'
+revision: str = 'a79ce81663af'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -61,13 +61,6 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id', name=op.f('pk_user'))
     )
     op.create_index(op.f('ix_user_email'), 'user', ['email'], unique=True)
-    op.create_table('warehouse',
-    sa.Column('title', sa.String(length=91), nullable=False),
-    sa.Column('address', sa.String(length=255), nullable=True),
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.PrimaryKeyConstraint('id', name=op.f('pk_warehouse')),
-    sa.UniqueConstraint('title', name=op.f('uq_warehouse_title'))
-    )
     op.create_table('characteristic',
     sa.Column('title', sa.String(length=255), nullable=False),
     sa.Column('category_id', sa.Integer(), nullable=False),
@@ -84,7 +77,7 @@ def upgrade() -> None:
     sa.Column('station_id', sa.Integer(), nullable=True),
     sa.Column('created', sa.DateTime(), server_default=sa.text("TIMEZONE('utc', now())"), nullable=False),
     sa.Column('updated', sa.DateTime(), server_default=sa.text("TIMEZONE('utc', now())"), nullable=False),
-    sa.Column('status', postgresql.ENUM('accepted', 'assembled', 'moving warehouse', 'delivery', 'delivered', 'completed', 'cancelled', name='enum_order_status'), nullable=False),
+    sa.Column('status', postgresql.ENUM('accepted', 'assembled', 'moving supplies', 'delivery', 'delivered', 'completed', 'cancelled', name='enum_order_status'), nullable=False),
     sa.Column('is_payment', sa.Boolean(), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('id', sa.Integer(), nullable=False),
@@ -96,16 +89,33 @@ def upgrade() -> None:
     sa.Column('title', sa.String(length=255), nullable=False),
     sa.Column('slug', sa.String(length=255), nullable=False),
     sa.Column('category_id', sa.Integer(), nullable=False),
+    sa.Column('quantity', sa.Integer(), nullable=False),
     sa.Column('price', sa.Numeric(precision=10, scale=2), nullable=False),
     sa.Column('description', sa.String(length=255), nullable=True),
     sa.Column('id', sa.Integer(), nullable=False),
     sa.CheckConstraint('price > 0', name=op.f('ck_product_`chk_product_price`')),
+    sa.CheckConstraint('quantity >= 0', name=op.f('ck_product_`chk_product_quantity`')),
     sa.ForeignKeyConstraint(['category_id'], ['category.id'], name=op.f('fk_product_category_id_category'), ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_product'))
     )
     op.create_index(op.f('ix_product_category_id'), 'product', ['category_id'], unique=False)
     op.create_index(op.f('ix_product_slug'), 'product', ['slug'], unique=True)
     op.create_index(op.f('ix_product_title'), 'product', ['title'], unique=True)
+    op.create_table('supplies',
+    sa.Column('document_number', sa.String(length=61), nullable=False),
+    sa.Column('supplier_id', sa.Integer(), nullable=False),
+    sa.Column('document_data', sa.Date(), nullable=False),
+    sa.Column('created', sa.DateTime(), server_default=sa.text("TIMEZONE('utc', now())"), nullable=False),
+    sa.Column('updated', sa.DateTime(), server_default=sa.text("TIMEZONE('utc', now())"), nullable=False),
+    sa.Column('create_user_id', sa.Integer(), nullable=True),
+    sa.Column('update_user_id', sa.Integer(), nullable=True),
+    sa.Column('draft', sa.Boolean(), nullable=False),
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['create_user_id'], ['user.id'], name=op.f('fk_supplies_create_user_id_user'), ondelete='SET NULL'),
+    sa.ForeignKeyConstraint(['supplier_id'], ['supplier.id'], name=op.f('fk_supplies_supplier_id_supplier'), ondelete='RESTRICT'),
+    sa.ForeignKeyConstraint(['update_user_id'], ['user.id'], name=op.f('fk_supplies_update_user_id_user'), ondelete='SET NULL'),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_supplies'))
+    )
     op.create_table('characteristic_product',
     sa.Column('characteristic_id', sa.Integer(), nullable=False),
     sa.Column('product_id', sa.Integer(), nullable=False),
@@ -131,35 +141,6 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['product_id'], ['product.id'], name=op.f('fk_order_product_product_id_product'), ondelete='RESTRICT'),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_order_product'))
     )
-    op.create_table('warehouse_product',
-    sa.Column('warehouse_id', sa.Integer(), nullable=False),
-    sa.Column('product_id', sa.Integer(), nullable=False),
-    sa.Column('quantity', sa.Integer(), nullable=False),
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.CheckConstraint('quantity > 0', name=op.f('ck_warehouse_product_`chk_warehouse_product_quantity`')),
-    sa.ForeignKeyConstraint(['product_id'], ['product.id'], name=op.f('fk_warehouse_product_product_id_product'), ondelete='RESTRICT'),
-    sa.ForeignKeyConstraint(['warehouse_id'], ['warehouse.id'], name=op.f('fk_warehouse_product_warehouse_id_warehouse'), ondelete='RESTRICT'),
-    sa.PrimaryKeyConstraint('id', name=op.f('pk_warehouse_product'))
-    )
-    op.create_index(op.f('ix_warehouse_product_product_id'), 'warehouse_product', ['product_id'], unique=True)
-    op.create_index(op.f('ix_warehouse_product_warehouse_id'), 'warehouse_product', ['warehouse_id'], unique=True)
-    op.create_table('supplies',
-    sa.Column('document_number', sa.String(length=61), nullable=False),
-    sa.Column('supplier_id', sa.Integer(), nullable=False),
-    sa.Column('warehouse_id', sa.Integer(), nullable=False),
-    sa.Column('document_data', sa.Date(), nullable=False),
-    sa.Column('created', sa.DateTime(), server_default=sa.text("TIMEZONE('utc', now())"), nullable=False),
-    sa.Column('updated', sa.DateTime(), server_default=sa.text("TIMEZONE('utc', now())"), nullable=False),
-    sa.Column('create_user_id', sa.Integer(), nullable=True),
-    sa.Column('update_user_id', sa.Integer(), nullable=True),
-    sa.Column('draft', sa.Boolean(), nullable=False),
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['create_user_id'], ['user.id'], name=op.f('fk_supplies_create_user_id_user'), ondelete='SET NULL'),
-    sa.ForeignKeyConstraint(['supplier_id'], ['supplier.id'], name=op.f('fk_supplies_supplier_id_supplier'), ondelete='RESTRICT'),
-    sa.ForeignKeyConstraint(['update_user_id'], ['user.id'], name=op.f('fk_supplies_update_user_id_user'), ondelete='SET NULL'),
-    sa.ForeignKeyConstraint(['warehouse_id'], ['warehouse_product.id'], name=op.f('fk_supplies_warehouse_id_warehouse_product'), ondelete='RESTRICT'),
-    sa.PrimaryKeyConstraint('id', name=op.f('pk_supplies'))
-    )
     op.create_table('supplies_product',
     sa.Column('supplies_id', sa.Integer(), nullable=False),
     sa.Column('product_id', sa.Integer(), nullable=False),
@@ -181,14 +162,11 @@ def downgrade() -> None:
     """Downgrade schema."""
     # ### commands auto generated by Alembic - please adjust! ###
     op.drop_table('supplies_product')
-    op.drop_table('supplies')
-    op.drop_index(op.f('ix_warehouse_product_warehouse_id'), table_name='warehouse_product')
-    op.drop_index(op.f('ix_warehouse_product_product_id'), table_name='warehouse_product')
-    op.drop_table('warehouse_product')
     op.drop_table('order_product')
     op.drop_index(op.f('ix_characteristic_product_product_id'), table_name='characteristic_product')
     op.drop_index(op.f('ix_characteristic_product_characteristic_id'), table_name='characteristic_product')
     op.drop_table('characteristic_product')
+    op.drop_table('supplies')
     op.drop_index(op.f('ix_product_title'), table_name='product')
     op.drop_index(op.f('ix_product_slug'), table_name='product')
     op.drop_index(op.f('ix_product_category_id'), table_name='product')
@@ -196,7 +174,6 @@ def downgrade() -> None:
     op.drop_table('order')
     op.drop_index(op.f('ix_characteristic_category_id'), table_name='characteristic')
     op.drop_table('characteristic')
-    op.drop_table('warehouse')
     op.drop_index(op.f('ix_user_email'), table_name='user')
     op.drop_table('user')
     op.drop_index(op.f('ix_supplier_title'), table_name='supplier')

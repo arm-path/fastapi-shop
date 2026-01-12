@@ -25,7 +25,6 @@ class SuppliesSchema(BaseModel):
     document_number: str
     document_data: date
     supplier_id: int
-    warehouse_id: int
     draft: bool
 
 

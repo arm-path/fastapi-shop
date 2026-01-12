@@ -5,16 +5,16 @@ from fastapi_pagination import Page
 
 from app.settings.database import SessionDepends
 from app.user.services import InstallerUserDepends
-from app.warehouse.schemas import (SupplierCreateSchema,
-                                   SupplierResponseSchema,
-                                   SupplierListSchema,
-                                   SuppliesSchema,
-                                   SuppliesBaseResponseSchema,
-                                   SuppliesWithSuppliersSchema,
-                                   SuppliesAddProductSchema)
-from app.warehouse.services import SupplierService, SuppliesService
+from app.supplies.schemas import (SupplierCreateSchema,
+                                  SupplierResponseSchema,
+                                  SupplierListSchema,
+                                  SuppliesSchema,
+                                  SuppliesBaseResponseSchema,
+                                  SuppliesWithSuppliersSchema,
+                                  SuppliesAddProductSchema)
+from app.supplies.services import SupplierService, SuppliesService
 
-router = APIRouter(prefix='/warehouse', tags=['warehouse'])
+router = APIRouter(prefix='/supplies', tags=['supplies'])
 
 
 @router.get('/supplier/list/', response_model=Page[SupplierListSchema])

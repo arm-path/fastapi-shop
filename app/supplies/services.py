@@ -10,12 +10,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.product import Product
-from app.warehouse.models import Supplier, Supplies, SuppliesProduct
-from app.warehouse.schemas import (SupplierCreateSchema,
-                                   SupplierListSchema,
-                                   SuppliesSchema,
-                                   SuppliesWithSuppliersSchema, SuppliesAddProductSchema
-                                   )
+from app.supplies.models import Supplier, Supplies, SuppliesProduct
+from app.supplies.schemas import (SupplierCreateSchema,
+                                  SupplierListSchema,
+                                  SuppliesSchema,
+                                  SuppliesWithSuppliersSchema, SuppliesAddProductSchema
+                                  )
 
 if TYPE_CHECKING:
     from app.user.models import User
@@ -137,7 +137,6 @@ class SuppliesService:
         supplies.document_number = data.document_number
         supplies.document_data = data.document_data
         supplies.supplier_id = data.supplier_id
-        supplies.warehouse_id = data.warehouse_id
         supplies.update_user_id = user.id
         supplies.draft = data.draft
         try:
@@ -145,14 +144,13 @@ class SuppliesService:
         except IntegrityError as e:
             await session.rollback()
             if e.orig.pgcode == '23503':
-                # TODO: Warehouse not found?
                 raise HTTPException(status_code=400, detail='Supplier not found.')
             print('ERR: SuppliesService.update -> ', e)
             raise HTTPException(status_code=500, detail='Database Error')
         except DBAPIError as e:
             await session.rollback()
             error_message = e.orig.__cause__.args[0]
-            if error_message and type(error_message) == str and 'not enough goods in the warehouse' in error_message:
+            if error_message and type(error_message) == str and 'not enough goods in the supplies' in error_message:
                 raise HTTPException(status_code=400, detail=e.orig.__cause__.args[0])
             print('ERR: SuppliesService.update -> ', e)
             raise HTTPException(status_code=500, detail='Database Error')
@@ -172,7 +170,7 @@ class SuppliesService:
         except DBAPIError as e:
             await session.rollback()
             error_message = e.orig.__cause__.args[0]
-            if error_message and type(error_message) == str and 'not enough goods in the warehouse' in error_message:
+            if error_message and type(error_message) == str and 'not enough goods in the supplies' in error_message:
                 raise HTTPException(status_code=400, detail=e.orig.__cause__.args[0])
             print('ERR: SuppliesService.update -> ', e)
             raise HTTPException(status_code=500, detail='Database Error')
