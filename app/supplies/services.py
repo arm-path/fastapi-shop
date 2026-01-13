@@ -126,7 +126,17 @@ class SuppliesService:
         data_supplies['update_user_id'] = user.id
         supplies = Supplies(**data_supplies)
         session.add(supplies)
-        await session.commit()
+        try:
+            await session.commit()
+        except IntegrityError as e:
+            await session.rollback()
+            if e.orig.pgcode == '23503':
+                raise HTTPException(status_code=400, detail='Supplier not found.')
+            print('ERR: SuppliesService.create -> ', e)
+            raise HTTPException(status_code=500, detail='Database Error')
+        except Exception as e:
+            print('ERR: SuppliesService.create -> ', e)
+            raise HTTPException(status_code=500, detail='Database Error')
         return supplies
 
     @classmethod
@@ -150,7 +160,7 @@ class SuppliesService:
         except DBAPIError as e:
             await session.rollback()
             error_message = e.orig.__cause__.args[0]
-            if error_message and type(error_message) == str and 'not enough goods in the supplies' in error_message:
+            if error_message and type(error_message) == str and 'Not enough products' in error_message:
                 raise HTTPException(status_code=400, detail=e.orig.__cause__.args[0])
             print('ERR: SuppliesService.update -> ', e)
             raise HTTPException(status_code=500, detail='Database Error')
