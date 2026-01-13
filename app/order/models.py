@@ -1,28 +1,21 @@
 from datetime import datetime
 from typing import Literal, get_args
 
-from sqlalchemy import ForeignKey, Integer, DECIMAL, Computed, CheckConstraint, DateTime, text, Boolean, String
+from sqlalchemy import ForeignKey, Integer, DECIMAL, Computed, CheckConstraint, DateTime, text, Boolean
 from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.settings.database import Base
 
-ORDER_STATUS = Literal['accepted', 'assembled', 'moving supplies', 'delivery', 'delivered', 'completed', 'cancelled']
-
-
-class Station(Base):
-    address: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
+ORDER_STATUS_TYPE = Literal['accepted', 'assembled', 'delivery', 'completed', 'cancelled']
+ORDER_STATUS = [*list(get_args(ORDER_STATUS_TYPE))]
 
 
 class Order(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey('user.id', ondelete='CASCADE'))
-    station_id: Mapped[int | None] = mapped_column(ForeignKey('station.id', ondelete='SET NULL'), nullable=True)
     created: Mapped[datetime] = mapped_column(DateTime, server_default=text("TIMEZONE('utc', now())"))
     updated: Mapped[datetime] = mapped_column(DateTime, server_default=text("TIMEZONE('utc', now())"), onupdate=True)
-    status: Mapped[ORDER_STATUS] = mapped_column(
-        ENUM(*list(get_args(ORDER_STATUS)), name='enum_order_status'),
-        default='accepted', nullable=False
-    )
+    status: Mapped[ORDER_STATUS_TYPE] = mapped_column(ENUM(*ORDER_STATUS, name='enum_order_status'))
     is_payment: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 

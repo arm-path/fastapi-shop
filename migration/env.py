@@ -12,7 +12,7 @@ from app.settings.settings import settings
 from app.product import Category, Product, Characteristic, CharacteristicProduct
 from app.user import User
 from app.supplies import Supplies, Supplier, SuppliesProduct
-from app.order import Order, OrderProduct, Station
+from app.order import Order, OrderProduct
 
 from alembic_utils.replaceable_entity import register_entities
 from app.settings.triggers import (
