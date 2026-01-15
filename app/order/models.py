@@ -15,7 +15,8 @@ class Order(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey('user.id', ondelete='CASCADE'))
     created: Mapped[datetime] = mapped_column(DateTime, server_default=text("TIMEZONE('utc', now())"))
     updated: Mapped[datetime] = mapped_column(DateTime, server_default=text("TIMEZONE('utc', now())"), onupdate=True)
-    status: Mapped[ORDER_STATUS_TYPE] = mapped_column(ENUM(*ORDER_STATUS, name='enum_order_status'))
+    status: Mapped[ORDER_STATUS_TYPE | None] = mapped_column(ENUM(*ORDER_STATUS, name='enum_order_status'),
+                                                             nullable=True)
     is_payment: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
