@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List, TYPE_CHECKING
 
 from fastapi import HTTPException
@@ -33,7 +34,7 @@ class OrderService:
             session.add_all(order_products)
             await session.flush()
             order.is_active = True # TODO: For start trigger, product quantity
-
+            order.updated = datetime.utcnow()
             await session.commit()
         except IntegrityError as e:
             print('OrderService.create -> ', e)

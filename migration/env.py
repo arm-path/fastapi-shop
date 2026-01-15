@@ -21,8 +21,11 @@ from app.settings.triggers import (
     supplies_product_update_tg,
     supplies_product_delete_tg,
     update_supplies_draft_fn,
-    update_supplies_draft_tg
+    update_supplies_draft_tg,
+    update_order_is_active_fn,
+    update_order_is_active_tg
 )
+
 register_entities(
     [
         update_supplies_product_fn,
@@ -30,7 +33,9 @@ register_entities(
         supplies_product_update_tg,
         supplies_product_delete_tg,
         update_supplies_draft_fn,
-        update_supplies_draft_tg
+        update_supplies_draft_tg,
+        update_order_is_active_fn,
+        update_order_is_active_tg
     ]
 )
 

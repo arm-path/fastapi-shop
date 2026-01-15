@@ -151,3 +151,53 @@ update_supplies_draft_tg = PGTrigger(
         EXECUTE FUNCTION update_supplies_draft_fn();
     """,
 )
+
+UPDATE_ORDER_IS_ACTIVE_SQL = """
+    RETURNS TRIGGER AS $$
+    BEGIN
+        IF (TG_OP = 'UPDATE') THEN
+            IF (NEW.is_active != OLD.is_active) THEN
+                    IF (NEW.is_active = TRUE AND NEW.status is NULL) THEN
+                        IF NOT EXISTS (
+                                SELECT 1
+                                FROM order_product op
+                                JOIN product p ON p.id = op.product_id
+                                WHERE op.order_id = NEW.id AND p.quantity < op.quantity
+                            ) THEN
+                                UPDATE product p
+                                SET quantity = p.quantity - op.quantity
+                                FROM order_product op
+                                WHERE op.order_id = NEW.id AND p.id = op.product_id;
+                            ELSE
+                                RAISE EXCEPTION 'Not enough products. The order has been cancelled.';
+                            END IF;
+                        END IF;
+                    IF (NEW.is_active = FALSE AND NEW.status is NULL) THEN
+                        UPDATE product p
+                        SET quantity = p.quantity + op.quantity
+                        FROM order_product op
+                        WHERE op.order_id = NEW.id AND p.id = op.product_id;
+                    END IF;
+                END IF;
+            END IF;
+        RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql; 
+ """
+
+update_order_is_active_fn = PGFunction(
+    schema="public",
+    signature="update_order_is_active_fn()",
+    definition=UPDATE_ORDER_IS_ACTIVE_SQL
+)
+
+update_order_is_active_tg = PGTrigger(
+    schema="public",
+    signature="update_order_is_active_tg",
+    on_entity="order",
+    definition="""
+        AFTER UPDATE ON order
+        FOR EACH ROW
+        EXECUTE FUNCTION update_order_is_active_fn();
+    """,
+)
