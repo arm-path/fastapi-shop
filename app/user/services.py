@@ -9,7 +9,7 @@ from pwdlib import PasswordHash
 from sqlalchemy import Select, select, Result, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import load_only
+from sqlalchemy.orm import load_only, lazyload
 
 from app.settings.database import SessionDepends
 from app.settings.settings import settings
@@ -54,7 +54,10 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], sessio
         raise credentials_exception
     user_query: Select = (
         select(User)
-        .options(load_only(User.id, User.email, User.first_name, User.last_name, User.role))
+        .options(
+            lazyload(User.cart),
+            load_only(User.id, User.email, User.first_name, User.last_name, User.role)
+        )
         .where(User.email == email, User.is_active == True)
     )
     user_result: Result = await session.execute(user_query)
@@ -64,6 +67,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], sessio
         raise credentials_exception
     return user
 
+
 CurrentUserDepends = Annotated[User, Depends(get_current_user)]
 
 
@@ -71,6 +75,7 @@ async def get_installer_user(user: CurrentUserDepends):
     if user.role == 'installer':
         return user
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Access denied.')
+
 
 InstallerUserDepends = Annotated[User, Depends(get_installer_user)]
 

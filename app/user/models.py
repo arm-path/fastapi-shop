@@ -6,6 +6,7 @@ from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.settings.database import Base
+from app.cart.models import Cart
 
 if TYPE_CHECKING:
     from app.cart.models import Cart
@@ -26,7 +27,6 @@ class User(Base):
     cart: Mapped[Cart] = relationship(back_populates='user')
 
 
-@event.listens_for(User, 'before_insert')
+@event.listens_for(User, 'after_insert')
 def create_cart_user(mapper, connection, target):
-    connection.execute(
-        Cart.__table__.insert().values(user_id=target.id, ))
+    connection.execute(Cart.__table__.insert().values(user_id=target.id, ))

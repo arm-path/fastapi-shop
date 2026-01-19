@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, List
 
-from sqlalchemy import ForeignKey, Integer
+from sqlalchemy import ForeignKey, Integer, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.settings.database import Base
@@ -24,3 +24,7 @@ class CartProduct(Base):
 
     product: Mapped[Product] = relationship(back_populates='in_carts')
     cart: Mapped[Cart] = relationship(back_populates='products')
+
+    __table_args__ = (
+        UniqueConstraint('product_id', 'cart_id', name='uq_product_id_cart_id_cart_product'),
+    )
