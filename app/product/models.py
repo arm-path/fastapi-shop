@@ -9,6 +9,7 @@ from app.settings.database import Base
 
 if TYPE_CHECKING:
     from app.supplies.models import SuppliesProduct
+    from app.cart.models import CartProduct
 
 CHARACTERISTIC_TYPE: list[str] = ['integer', 'float', 'string', 'boolean']
 
@@ -40,6 +41,7 @@ class Product(Base):
 
     characteristics: Mapped[List['CharacteristicProduct']] = relationship(back_populates='product')
     supplies_documents: Mapped[List['SuppliesProduct']] = relationship(back_populates='supplies_product')
+    in_carts: Mapped[List[CartProduct]] = relationship(back_populates='product')
 
     __table_args__ = (CheckConstraint('price > 0', name='chk_product_price'),)
 

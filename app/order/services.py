@@ -33,7 +33,7 @@ class OrderService:
                 )
             session.add_all(order_products)
             await session.flush()
-            order.is_active = True # TODO: For start trigger, product quantity
+            order.is_active = True
             order.updated = datetime.utcnow()
             await session.commit()
         except IntegrityError as e:
