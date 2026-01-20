@@ -1,9 +1,11 @@
 from pydantic import BaseModel
 
 
-class ProductCartCreateSchema(BaseModel):
-    product_id: int
+class ProductCartEditSchema(BaseModel):
     quantity: int
+
+class ProductCartCreateSchema(ProductCartEditSchema):
+    product_id: int
 
 
 class ProductCartResponseSchema(ProductCartCreateSchema):
