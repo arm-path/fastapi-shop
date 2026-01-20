@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, List
 
-from sqlalchemy import ForeignKey, Integer, UniqueConstraint
+from sqlalchemy import ForeignKey, Integer, UniqueConstraint, CheckConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.settings.database import Base
@@ -27,4 +27,5 @@ class CartProduct(Base):
 
     __table_args__ = (
         UniqueConstraint('product_id', 'cart_id', name='uq_product_id_cart_id_cart_product'),
+        CheckConstraint('quantity > 0', name='chk_quantity_cart_product'),
     )

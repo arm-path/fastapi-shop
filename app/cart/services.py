@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from fastapi import HTTPException
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -5,8 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.cart.models import CartProduct
 from app.cart.schemas import ProductCartCreateSchema, ProductCartResponseSchema
 from app.product.models import Product
-from app.user import User
 
+if TYPE_CHECKING:
+    from app.user import User
 
 class CartService:
     @classmethod
