@@ -1,8 +1,9 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ProductCartEditSchema(BaseModel):
-    quantity: int
+    quantity: int = Field(gt=1, )
+
 
 class ProductCartCreateSchema(ProductCartEditSchema):
     product_id: int
