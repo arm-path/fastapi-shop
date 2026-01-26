@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 from fastapi import HTTPException
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.cart.models import CartProduct
 from app.cart.schemas import ProductCartCreateSchema, ProductCartResponseSchema
@@ -10,6 +11,7 @@ from app.product.models import Product
 
 if TYPE_CHECKING:
     from app.user import User
+
 
 class CartService:
     @classmethod
@@ -86,3 +88,44 @@ class CartService:
 
         await session.execute(product_cart_query)
         await session.commit()
+
+    @classmethod
+    async def detail_cart(cls, session: AsyncSession, user: User):
+        await session.refresh(user, ['cart'])
+
+        products_in_cart_query = (
+            select(CartProduct.id,
+                   CartProduct.quantity,
+                   CartProduct.product_id,
+                   CartProduct.cart_id,
+                   Product.id.label('product_id'),
+                   Product.title,
+                   Product.price,
+                   Product.quantity.label('warehouse'),
+                   (Product.price * CartProduct.quantity).label('total'),
+                   )
+            .where(CartProduct.cart_id == user.cart.id)
+            .join(Product, CartProduct.product_id == Product.id)
+        )
+        products_in_cart_result = await session.execute(products_in_cart_query)
+        products_in_cart = products_in_cart_result.all()
+
+        cart_items = []
+        total_sum = 0
+        for row in products_in_cart:
+            cart_items.append({
+                'id': row.id,
+                'product': row.title,
+                'quantity': row.quantity,
+                'warehouse': row.warehouse,
+                'price': row.price,
+                'total': row.total
+            })
+            total_sum += row.total
+        cart = {
+            'cart': user.cart.id,
+            'items': cart_items,
+            'total': total_sum
+        }
+
+        return cart

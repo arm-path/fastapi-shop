@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
-from app.cart.schemas import ProductCartCreateSchema, ProductCartResponseSchema, ProductCartEditSchema
+from app.cart.schemas import ProductCartCreateSchema, ProductCartResponseSchema, ProductCartEditSchema, \
+    CartResponseSchema
 from app.cart.services import CartService
 from app.settings.database import SessionDepends
 from app.user.services import CurrentUserDepends
@@ -27,3 +28,8 @@ async def edit_product_in_cart(user: CurrentUserDepends,
 @router.delete('/delete-product/{product_id}/')
 async def delete_product_in_cart(user: CurrentUserDepends, session: SessionDepends, product_id: int):
     return await CartService.delete_product(session, user, product_id)
+
+
+@router.get('/detail/', response_model=CartResponseSchema)
+async def detail_cart(user: CurrentUserDepends, session: SessionDepends):
+    return await CartService.detail_cart(session, user)
