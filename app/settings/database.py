@@ -29,6 +29,9 @@ class Base(DeclarativeBase):
 async_engine = create_async_engine(settings.postgres_url, echo=False)
 async_session = async_sessionmaker(async_engine, expire_on_commit=False)
 
+test_async_engine = create_async_engine(settings.test_postgres_url, echo=False)
+test_async_session = async_sessionmaker(test_async_engine,expire_on_commit=False)
+
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     async with async_session() as session:
