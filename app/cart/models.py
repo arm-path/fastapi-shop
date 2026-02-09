@@ -1,9 +1,10 @@
 from typing import TYPE_CHECKING, List
 
-from sqlalchemy import ForeignKey, Integer, UniqueConstraint, CheckConstraint
+from sqlalchemy import ForeignKey, Integer, UniqueConstraint, CheckConstraint, event
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.settings.database import Base
+from app.user.models import User
 
 if TYPE_CHECKING:
     from app.product.models import Product
@@ -29,3 +30,8 @@ class CartProduct(Base):
         UniqueConstraint('product_id', 'cart_id', name='uq_product_id_cart_id_cart_product'),
         CheckConstraint('quantity > 0', name='chk_quantity_cart_product'),
     )
+
+
+@event.listens_for(User, 'after_insert')
+def create_cart_user(mapper, connection, target):
+    connection.execute(Cart.__table__.insert().values(user_id=target.id, ))
