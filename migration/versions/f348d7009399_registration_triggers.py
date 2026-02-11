@@ -1,8 +1,8 @@
-"""Triggers
+"""Registration triggers
 
-Revision ID: 57dd7b66466c
-Revises: a79ce81663af
-Create Date: 2026-01-12 20:27:39.127648
+Revision ID: f348d7009399
+Revises: 2ce398046817
+Create Date: 2026-02-11 20:32:35.890425
 
 """
 from typing import Sequence, Union
@@ -15,8 +15,8 @@ from alembic_utils.pg_trigger import PGTrigger
 from sqlalchemy import text as sql_text
 
 # revision identifiers, used by Alembic.
-revision: str = '57dd7b66466c'
-down_revision: Union[str, Sequence[str], None] = 'a79ce81663af'
+revision: str = 'f348d7009399'
+down_revision: Union[str, Sequence[str], None] = '2ce398046817'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -34,9 +34,16 @@ def upgrade() -> None:
     public_update_supplies_draft_fn = PGFunction(
         schema="public",
         signature="update_supplies_draft_fn()",
-        definition="RETURNS TRIGGER AS $$\nBEGIN\n    IF (TG_OP = 'UPDATE') THEN\n        IF (NEW.draft != OLD.draft) THEN\n            IF (NEW.draft = TRUE) THEN\n                IF NOT EXISTS (\n                        SELECT 1\n                        FROM supplies_product sp\n                        JOIN product p ON p.id = sp.product_id\n                        WHERE sp.supplies_id = NEW.id AND p.quantity <= sp.quantity\n                    ) THEN\n                        UPDATE product p\n                        SET quantity = p.quantity - sp.quantity\n                        FROM supplies_product sp\n                        WHERE sp.supplies_id = NEW.id AND p.id = sp.product_id;\n                    ELSE\n                        RAISE EXCEPTION 'Not enough products. Is Draft leads to a negative remainder';\n                    END IF;\n                END IF;\n                IF (NEW.draft = FALSE) THEN\n                    UPDATE product p\n                    SET quantity = p.quantity + sp.quantity\n                    FROM supplies_product sp\n                    WHERE sp.supplies_id = NEW.id AND p.id = sp.product_id;\n                END IF;\n            END IF;\n        END IF;\n    RETURN NEW;\nEND;\n$$ LANGUAGE plpgsql"
+        definition="RETURNS TRIGGER AS $$\nBEGIN\n    IF (TG_OP = 'UPDATE') THEN\n        IF (NEW.draft != OLD.draft) THEN\n            IF (NEW.draft = TRUE) THEN\n                IF NOT EXISTS (\n                        SELECT 1\n                        FROM supplies_product sp\n                        JOIN product p ON p.id = sp.product_id\n                        WHERE sp.supplies_id = NEW.id AND p.quantity < sp.quantity\n                    ) THEN\n                        UPDATE product p\n                        SET quantity = p.quantity - sp.quantity\n                        FROM supplies_product sp\n                        WHERE sp.supplies_id = NEW.id AND p.id = sp.product_id;\n                    ELSE\n                        RAISE EXCEPTION 'Not enough products. Is Draft leads to a negative remainder';\n                    END IF;\n                END IF;\n                IF (NEW.draft = FALSE) THEN\n                    UPDATE product p\n                    SET quantity = p.quantity + sp.quantity\n                    FROM supplies_product sp\n                    WHERE sp.supplies_id = NEW.id AND p.id = sp.product_id;\n                END IF;\n            END IF;\n        END IF;\n    RETURN NEW;\nEND;\n$$ LANGUAGE plpgsql"
     )
     op.create_entity(public_update_supplies_draft_fn)
+
+    public_update_order_is_active_fn = PGFunction(
+        schema="public",
+        signature="update_order_is_active_fn()",
+        definition="RETURNS TRIGGER AS $$\n    BEGIN\n        IF (TG_OP = 'UPDATE') THEN\n            IF (NEW.is_active != OLD.is_active) THEN\n                    IF (NEW.is_active = TRUE AND NEW.status is NULL) THEN\n                        IF NOT EXISTS (\n                                SELECT 1\n                                FROM order_product op\n                                JOIN product p ON p.id = op.product_id\n                                WHERE op.order_id = NEW.id AND p.quantity < op.quantity\n                            ) THEN\n                                UPDATE product p\n                                SET quantity = p.quantity - op.quantity\n                                FROM order_product op\n                                WHERE op.order_id = NEW.id AND p.id = op.product_id;\n                            ELSE\n                                RAISE EXCEPTION 'Not enough products. The order has been cancelled.';\n                            END IF;\n                        END IF;\n                    IF (NEW.is_active = FALSE AND NEW.status is NULL) THEN\n                        UPDATE product p\n                        SET quantity = p.quantity + op.quantity\n                        FROM order_product op\n                        WHERE op.order_id = NEW.id AND p.id = op.product_id;\n                    END IF;\n                END IF;\n            END IF;\n        RETURN NEW;\n    END;\n    $$ LANGUAGE plpgsql"
+    )
+    op.create_entity(public_update_order_is_active_fn)
 
     public_supplies_product_supplies_product_insert_tg = PGTrigger(
         schema="public",
@@ -74,12 +81,30 @@ def upgrade() -> None:
     )
     op.create_entity(public_supplies_update_supplies_draft_tg)
 
+    public_order_update_order_is_active_tg = PGTrigger(
+        schema="public",
+        signature="update_order_is_active_tg",
+        on_entity="public.order",
+        is_constraint=False,
+        definition='AFTER UPDATE ON order\n        FOR EACH ROW\n        EXECUTE FUNCTION update_order_is_active_fn()'
+    )
+    op.create_entity(public_order_update_order_is_active_tg)
+
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     """Downgrade schema."""
     # ### commands auto generated by Alembic - please adjust! ###
+    public_order_update_order_is_active_tg = PGTrigger(
+        schema="public",
+        signature="update_order_is_active_tg",
+        on_entity="public.order",
+        is_constraint=False,
+        definition='AFTER UPDATE ON order\n        FOR EACH ROW\n        EXECUTE FUNCTION update_order_is_active_fn()'
+    )
+    op.drop_entity(public_order_update_order_is_active_tg)
+
     public_supplies_update_supplies_draft_tg = PGTrigger(
         schema="public",
         signature="update_supplies_draft_tg",
@@ -116,10 +141,17 @@ def downgrade() -> None:
     )
     op.drop_entity(public_supplies_product_supplies_product_insert_tg)
 
+    public_update_order_is_active_fn = PGFunction(
+        schema="public",
+        signature="update_order_is_active_fn()",
+        definition="RETURNS TRIGGER AS $$\n    BEGIN\n        IF (TG_OP = 'UPDATE') THEN\n            IF (NEW.is_active != OLD.is_active) THEN\n                    IF (NEW.is_active = TRUE AND NEW.status is NULL) THEN\n                        IF NOT EXISTS (\n                                SELECT 1\n                                FROM order_product op\n                                JOIN product p ON p.id = op.product_id\n                                WHERE op.order_id = NEW.id AND p.quantity < op.quantity\n                            ) THEN\n                                UPDATE product p\n                                SET quantity = p.quantity - op.quantity\n                                FROM order_product op\n                                WHERE op.order_id = NEW.id AND p.id = op.product_id;\n                            ELSE\n                                RAISE EXCEPTION 'Not enough products. The order has been cancelled.';\n                            END IF;\n                        END IF;\n                    IF (NEW.is_active = FALSE AND NEW.status is NULL) THEN\n                        UPDATE product p\n                        SET quantity = p.quantity + op.quantity\n                        FROM order_product op\n                        WHERE op.order_id = NEW.id AND p.id = op.product_id;\n                    END IF;\n                END IF;\n            END IF;\n        RETURN NEW;\n    END;\n    $$ LANGUAGE plpgsql"
+    )
+    op.drop_entity(public_update_order_is_active_fn)
+
     public_update_supplies_draft_fn = PGFunction(
         schema="public",
         signature="update_supplies_draft_fn()",
-        definition="RETURNS TRIGGER AS $$\nBEGIN\n    IF (TG_OP = 'UPDATE') THEN\n        IF (NEW.draft != OLD.draft) THEN\n            IF (NEW.draft = TRUE) THEN\n                IF NOT EXISTS (\n                        SELECT 1\n                        FROM supplies_product sp\n                        JOIN product p ON p.id = sp.product_id\n                        WHERE sp.supplies_id = NEW.id AND p.quantity <= sp.quantity\n                    ) THEN\n                        UPDATE product p\n                        SET quantity = p.quantity - sp.quantity\n                        FROM supplies_product sp\n                        WHERE sp.supplies_id = NEW.id AND p.id = sp.product_id;\n                    ELSE\n                        RAISE EXCEPTION 'Not enough products. Is Draft leads to a negative remainder';\n                    END IF;\n                END IF;\n                IF (NEW.draft = FALSE) THEN\n                    UPDATE product p\n                    SET quantity = p.quantity + sp.quantity\n                    FROM supplies_product sp\n                    WHERE sp.supplies_id = NEW.id AND p.id = sp.product_id;\n                END IF;\n            END IF;\n        END IF;\n    RETURN NEW;\nEND;\n$$ LANGUAGE plpgsql"
+        definition="RETURNS TRIGGER AS $$\nBEGIN\n    IF (TG_OP = 'UPDATE') THEN\n        IF (NEW.draft != OLD.draft) THEN\n            IF (NEW.draft = TRUE) THEN\n                IF NOT EXISTS (\n                        SELECT 1\n                        FROM supplies_product sp\n                        JOIN product p ON p.id = sp.product_id\n                        WHERE sp.supplies_id = NEW.id AND p.quantity < sp.quantity\n                    ) THEN\n                        UPDATE product p\n                        SET quantity = p.quantity - sp.quantity\n                        FROM supplies_product sp\n                        WHERE sp.supplies_id = NEW.id AND p.id = sp.product_id;\n                    ELSE\n                        RAISE EXCEPTION 'Not enough products. Is Draft leads to a negative remainder';\n                    END IF;\n                END IF;\n                IF (NEW.draft = FALSE) THEN\n                    UPDATE product p\n                    SET quantity = p.quantity + sp.quantity\n                    FROM supplies_product sp\n                    WHERE sp.supplies_id = NEW.id AND p.id = sp.product_id;\n                END IF;\n            END IF;\n        END IF;\n    RETURN NEW;\nEND;\n$$ LANGUAGE plpgsql"
     )
     op.drop_entity(public_update_supplies_draft_fn)
 

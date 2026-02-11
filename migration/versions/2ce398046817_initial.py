@@ -1,8 +1,8 @@
 """Initial
 
-Revision ID: a79ce81663af
+Revision ID: 2ce398046817
 Revises: 
-Create Date: 2026-01-12 19:26:53.282303
+Create Date: 2026-02-11 20:31:54.238606
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = 'a79ce81663af'
+revision: str = '2ce398046817'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -32,12 +32,6 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_category_parent_id'), 'category', ['parent_id'], unique=False)
     op.create_index(op.f('ix_category_slug'), 'category', ['slug'], unique=True)
-    op.create_table('station',
-    sa.Column('address', sa.String(length=255), nullable=False),
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.PrimaryKeyConstraint('id', name=op.f('pk_station'))
-    )
-    op.create_index(op.f('ix_station_address'), 'station', ['address'], unique=False)
     op.create_table('supplier',
     sa.Column('title', sa.String(length=255), nullable=False),
     sa.Column('inn', sa.String(length=12), nullable=False),
@@ -61,6 +55,13 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id', name=op.f('pk_user'))
     )
     op.create_index(op.f('ix_user_email'), 'user', ['email'], unique=True)
+    op.create_table('cart',
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], name=op.f('fk_cart_user_id_user'), ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_cart')),
+    sa.UniqueConstraint('user_id', name=op.f('uq_cart_user_id'))
+    )
     op.create_table('characteristic',
     sa.Column('title', sa.String(length=255), nullable=False),
     sa.Column('category_id', sa.Integer(), nullable=False),
@@ -74,14 +75,12 @@ def upgrade() -> None:
     op.create_index(op.f('ix_characteristic_category_id'), 'characteristic', ['category_id'], unique=False)
     op.create_table('order',
     sa.Column('user_id', sa.Integer(), nullable=False),
-    sa.Column('station_id', sa.Integer(), nullable=True),
     sa.Column('created', sa.DateTime(), server_default=sa.text("TIMEZONE('utc', now())"), nullable=False),
     sa.Column('updated', sa.DateTime(), server_default=sa.text("TIMEZONE('utc', now())"), nullable=False),
-    sa.Column('status', postgresql.ENUM('accepted', 'assembled', 'moving supplies', 'delivery', 'delivered', 'completed', 'cancelled', name='enum_order_status'), nullable=False),
+    sa.Column('status', postgresql.ENUM('accepted', 'assembled', 'delivery', 'completed', 'cancelled', name='enum_order_status'), nullable=True),
     sa.Column('is_payment', sa.Boolean(), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['station_id'], ['station.id'], name=op.f('fk_order_station_id_station'), ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], name=op.f('fk_order_user_id_user'), ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_order'))
     )
@@ -94,7 +93,6 @@ def upgrade() -> None:
     sa.Column('description', sa.String(length=255), nullable=True),
     sa.Column('id', sa.Integer(), nullable=False),
     sa.CheckConstraint('price > 0', name=op.f('ck_product_`chk_product_price`')),
-    sa.CheckConstraint('quantity >= 0', name=op.f('ck_product_`chk_product_quantity`')),
     sa.ForeignKeyConstraint(['category_id'], ['category.id'], name=op.f('fk_product_category_id_category'), ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_product'))
     )
@@ -115,6 +113,17 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['supplier_id'], ['supplier.id'], name=op.f('fk_supplies_supplier_id_supplier'), ondelete='RESTRICT'),
     sa.ForeignKeyConstraint(['update_user_id'], ['user.id'], name=op.f('fk_supplies_update_user_id_user'), ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_supplies'))
+    )
+    op.create_table('cart_product',
+    sa.Column('product_id', sa.Integer(), nullable=False),
+    sa.Column('quantity', sa.Integer(), nullable=False),
+    sa.Column('cart_id', sa.Integer(), nullable=False),
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.CheckConstraint('quantity > 0', name=op.f('ck_cart_product_`chk_quantity_cart_product`')),
+    sa.ForeignKeyConstraint(['cart_id'], ['cart.id'], name=op.f('fk_cart_product_cart_id_cart'), ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['product_id'], ['product.id'], name=op.f('fk_cart_product_product_id_product'), ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_cart_product')),
+    sa.UniqueConstraint('product_id', 'cart_id', name='uq_product_id_cart_id_cart_product')
     )
     op.create_table('characteristic_product',
     sa.Column('characteristic_id', sa.Integer(), nullable=False),
@@ -166,6 +175,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_characteristic_product_product_id'), table_name='characteristic_product')
     op.drop_index(op.f('ix_characteristic_product_characteristic_id'), table_name='characteristic_product')
     op.drop_table('characteristic_product')
+    op.drop_table('cart_product')
     op.drop_table('supplies')
     op.drop_index(op.f('ix_product_title'), table_name='product')
     op.drop_index(op.f('ix_product_slug'), table_name='product')
@@ -174,13 +184,12 @@ def downgrade() -> None:
     op.drop_table('order')
     op.drop_index(op.f('ix_characteristic_category_id'), table_name='characteristic')
     op.drop_table('characteristic')
+    op.drop_table('cart')
     op.drop_index(op.f('ix_user_email'), table_name='user')
     op.drop_table('user')
     op.drop_index(op.f('ix_supplier_title'), table_name='supplier')
     op.drop_index(op.f('ix_supplier_inn'), table_name='supplier')
     op.drop_table('supplier')
-    op.drop_index(op.f('ix_station_address'), table_name='station')
-    op.drop_table('station')
     op.drop_index(op.f('ix_category_slug'), table_name='category')
     op.drop_index(op.f('ix_category_parent_id'), table_name='category')
     op.drop_table('category')
