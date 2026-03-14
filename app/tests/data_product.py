@@ -43,3 +43,8 @@ characteristic_data_3 = CharacteristicSchema(
     unit='',
     type='string'
 )
+
+characteristic_data_4 = CharacteristicSchema(
+    title='characteristic 4',
+    type='integer'
+)

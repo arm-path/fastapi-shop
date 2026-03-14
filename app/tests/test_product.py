@@ -5,7 +5,8 @@ from sqlalchemy import select
 from app.product import Category
 from app.product.services import CategoryService
 from app.tests.data_product import (
-    category_data_1, category_data_2, category_data_3, category_data_4, category_data_5, category_data_update
+    category_data_1, category_data_2, category_data_3, category_data_4, category_data_5, category_data_update,
+    characteristic_data_1, characteristic_data_2, characteristic_data_3, characteristic_data_4
 
 )
 
@@ -54,4 +55,44 @@ async def test_category(test_session):
     assert len(categories_result) == 3
 
     categories = await CategoryService.list(test_session, False)
-    assert len(categories) == 2 # With parent_id == None
+    assert len(categories) == 2  # With parent_id == None
+
+
+@pytest.mark.asyncio
+async def test_characteristic(test_session):
+    characteristics_category = [characteristic_data_1, characteristic_data_2, characteristic_data_3]
+    await CategoryService.add_characteristic(test_session, 1, characteristics_category)
+
+    category = await CategoryService.detail(test_session, 1, True)
+
+    assert len(category.characteristics) == 3
+
+    characteristics_category = [characteristic_data_4, characteristic_data_1]
+
+    try:
+        await CategoryService.add_characteristic(test_session, 1, characteristics_category)
+        assert False
+    except HTTPException as e:
+        assert '400: Violation unique characteristics' in str(e)
+
+    characteristics_category = [characteristic_data_4, ]
+
+    await CategoryService.add_characteristic(test_session, 2, characteristics_category)
+
+    category_2_characteristics = await CategoryService.get_characteristic(test_session, 2)
+
+    assert len(category_2_characteristics) == 1 and category_2_characteristics[0].id == 6
+
+    category_1_characteristics = await CategoryService.get_characteristic(test_session, 1)
+
+    assert category_1_characteristics[0].id == 1
+
+    characteristic = await CategoryService.update_characteristic(test_session, 1, characteristic_data_4)
+
+    assert characteristic.title == 'characteristic 4'
+
+    await CategoryService.delete_characteristic(test_session, 1)
+
+    category = await CategoryService.detail(test_session, 1, True)
+
+    assert len(category.characteristics) == 2
