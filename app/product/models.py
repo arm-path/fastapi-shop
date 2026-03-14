@@ -16,7 +16,7 @@ CHARACTERISTIC_TYPE: list[str] = ['integer', 'float', 'string', 'boolean']
 
 class Category(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
-    title: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
     slug: Mapped[str] = mapped_column(String(255), nullable=False, index=True, unique=True)
     parent_id: Mapped[Category | None] = mapped_column(
         ForeignKey('category.id', ondelete='CASCADE'),
@@ -26,6 +26,10 @@ class Category(Base):
     characteristics: Mapped[List['Characteristic']] = relationship(back_populates='category')
     parent: Mapped['Category'] = relationship('Category', remote_side=[id], back_populates='categories')
     categories: Mapped[List['Category']] = relationship('Category', back_populates='parent')
+
+    __table_args__ = (
+        UniqueConstraint('title', 'parent_id', name='uq_tb-category_title_parent_id'),
+    )
 
 
 class Product(Base):
@@ -87,7 +91,8 @@ class CharacteristicProduct(Base):
 @event.listens_for(Category, 'before_insert')
 @event.listens_for(Category, 'before_update')
 def generate_slug_category(mapper, connection, target):
-    target.slug = slugify(target.title, max_length=255)
+    generate_slug = str(target.title + '_' + str(target.parent_id)) if target.parent_id else target.title
+    target.slug = slugify(generate_slug, max_length=255)
 
 
 @event.listens_for(Product, 'before_insert')
