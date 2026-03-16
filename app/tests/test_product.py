@@ -1,12 +1,13 @@
 import pytest
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, func
 
-from app.product import Category
-from app.product.services import CategoryService
+from app.product import Category, Product
+from app.product.services import CategoryService, ProductService
 from app.tests.data_product import (
     category_data_1, category_data_2, category_data_3, category_data_4, category_data_5, category_data_update,
-    characteristic_data_1, characteristic_data_2, characteristic_data_3, characteristic_data_4
+    characteristic_data_1, characteristic_data_2, characteristic_data_3, characteristic_data_4,
+    product_data_1, product_data_2, product_data_3, product_data_4, product_data_5
 
 )
 
@@ -96,3 +97,47 @@ async def test_characteristic(test_session):
     category = await CategoryService.detail(test_session, 1, True)
 
     assert len(category.characteristics) == 2
+
+
+@pytest.mark.asyncio
+async def test_product(test_session):
+    product = await ProductService.create(test_session, product_data_1)
+    assert product.id == 1 and product.title == product_data_1.title and product.price == product_data_1.price
+
+    await ProductService.create(test_session, product_data_2)
+    await ProductService.create(test_session, product_data_3)
+
+    product_count = await test_session.execute(select(func.count()).select_from(Product))
+    assert product_count.scalar() == 3
+
+    with pytest.raises(HTTPException) as exc_info:
+        await ProductService.create(test_session, product_data_4)
+    assert exc_info.value.status_code == 400 and 'Category not found' in exc_info.value.detail
+
+    with pytest.raises(HTTPException) as exc_info:
+        await ProductService.create(test_session, product_data_5)
+
+    assert exc_info.value.status_code == 400 and 'Negative price' in exc_info.value.detail
+
+    product_update_data_3 = product_data_3
+    product_update_data_3.category_id = 100
+    with pytest.raises(HTTPException) as exc_info:
+        await ProductService.update(test_session, 3, product_update_data_3)
+    assert exc_info.value.status_code == 400 and 'Category not found' in exc_info.value.detail
+
+    product_update_data_3.category_id = 2
+    product_update_data_3.price = -2
+    with pytest.raises(HTTPException) as exc_info:
+        await ProductService.update(test_session, 3, product_update_data_3)
+    assert exc_info.value.status_code == 400 and 'Negative price' in exc_info.value.detail
+
+    product_update_data_3.price = 15.23
+    product_update_data_3.title = product_data_2.title
+    with pytest.raises(HTTPException) as exc_info:
+        await ProductService.update(test_session, 3, product_update_data_3)
+    assert exc_info.value.status_code == 400 and 'Duplicate produc' in exc_info.value.detail
+
+    await ProductService.delete(test_session, 3)
+
+    product_count = await test_session.execute(select(func.count()).select_from(Product))
+    assert product_count.scalar() == 2

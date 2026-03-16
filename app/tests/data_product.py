@@ -1,4 +1,4 @@
-from app.product.schemas import CategorySchema, CharacteristicSchema
+from app.product.schemas import CategorySchema, CharacteristicSchema, ProductSchema
 
 category_data_1 = CategorySchema(
     title='Category-1'
@@ -48,3 +48,36 @@ characteristic_data_4 = CharacteristicSchema(
     title='characteristic 4',
     type='integer'
 )
+
+product_data_1 = ProductSchema(
+    title='product-1',
+    category_id=1,
+    price=14.54,
+    description='Product description'
+)
+
+product_data_2 = ProductSchema(
+    title='product-2',
+    category_id=1,
+    price=15.51,
+    description=''
+)
+
+product_data_3 = ProductSchema(
+    title='product-3',
+    category_id=2,
+    price=15.51
+)
+
+product_data_4 = ProductSchema(
+    title='product-4',
+    category_id=120,
+    price=15.51
+)
+
+product_data_5 = ProductSchema(
+    title='product-5',
+    category_id=1,
+    price=-15.51
+)
+

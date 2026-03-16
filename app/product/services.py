@@ -2,7 +2,7 @@ from typing import List, Sequence
 
 from fastapi import HTTPException, status
 from fastapi_pagination import Page
-from fastapi_pagination.ext.sqlalchemy import paginate
+from fastapi_pagination.ext.sqlalchemy import paginate, apaginate
 from sqlalchemy import select, Result, Select, delete
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -139,11 +139,11 @@ class CategoryService:
 class ProductService:
 
     @classmethod
-    async def list(cls, session: AsyncSession, category_id: int | None) -> Page[ProductDetailSchema]:
+    async def list(cls, session: AsyncSession, category_id: int | None = None) -> Page[ProductDetailSchema]:
         product_query: Select = select(Product)
         if category_id:
             product_query: Select = product_query.where(Product.category_id == category_id)
-        return await paginate(session, product_query)
+        return await apaginate(session, product_query)
 
     @classmethod
     async def detail(cls, session: AsyncSession, product_id: int, characteristics: bool = None) -> Product:
@@ -172,7 +172,11 @@ class ProductService:
             await session.rollback()
             if e.orig.pgcode == '23503':
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Category not found.')
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail='Unhandled exception.')
+            if e.orig.pgcode == '23505':
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Duplicate product')
+            if e.orig.pgcode == '23514':
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Negative price')
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'Unhandled exception.')
         except Exception as e:
             await session.rollback()
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail='Internal server error.')
@@ -202,6 +206,10 @@ class ProductService:
             await session.rollback()
             if e.orig.pgcode == '23503':
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Category not found.')
+            if e.orig.pgcode == '23505':
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Duplicate product')
+            if e.orig.pgcode == '23514':
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Negative price')
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail='Unhandled exception.')
         except Exception as e:
             await session.rollback()
