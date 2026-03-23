@@ -1,4 +1,5 @@
-from app.product.schemas import CategorySchema, CharacteristicSchema, ProductSchema
+from app.product.schemas import CategorySchema, CharacteristicSchema, ProductSchema, ProductCharacteristicSchema, \
+    ProductCharacteristicSchemaUpdate
 
 category_data_1 = CategorySchema(
     title='Category-1'
@@ -35,7 +36,7 @@ characteristic_data_1 = CharacteristicSchema(
 characteristic_data_2 = CharacteristicSchema(
     title='characteristic 2 cat 1',
     unit='',
-    type='string'
+    type='integer'
 )
 
 characteristic_data_3 = CharacteristicSchema(
@@ -81,3 +82,37 @@ product_data_5 = ProductSchema(
     price=-15.51
 )
 
+characteristic_1_c_1_product_1 = ProductCharacteristicSchema(
+    characteristic_id=2,
+    value='100'
+)
+
+characteristic_1_c_2_product_1 = ProductCharacteristicSchema(
+    characteristic_id=3,
+    value='string'
+)
+
+characteristic_value_type_err = ProductCharacteristicSchema(
+    characteristic_id=2,
+    value='err'  # characteristic_id = 2: integer
+)
+
+characteristic_category_err = ProductCharacteristicSchema(
+    characteristic_id=6,  # characteristic.category_id = 2
+    value='1'
+)
+
+characteristic_id_err = ProductCharacteristicSchema(
+    characteristic_id=1,
+    value='1'
+)
+
+characteristic_update_type_err = ProductCharacteristicSchemaUpdate(
+    id=1,
+    value='w'
+)
+
+characteristic_update = ProductCharacteristicSchemaUpdate(
+    id=1,
+    value='13'
+)

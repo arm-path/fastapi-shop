@@ -2,12 +2,14 @@ import pytest
 from fastapi import HTTPException
 from sqlalchemy import select, func
 
-from app.product import Category, Product
+from app.product import Category, Product, Characteristic, CharacteristicProduct
 from app.product.services import CategoryService, ProductService
 from app.tests.data_product import (
     category_data_1, category_data_2, category_data_3, category_data_4, category_data_5, category_data_update,
     characteristic_data_1, characteristic_data_2, characteristic_data_3, characteristic_data_4,
-    product_data_1, product_data_2, product_data_3, product_data_4, product_data_5
+    product_data_1, product_data_2, product_data_3, product_data_4, product_data_5,
+    characteristic_value_type_err, characteristic_category_err, characteristic_id_err, characteristic_1_c_1_product_1,
+    characteristic_1_c_2_product_1, characteristic_update_type_err, characteristic_update
 
 )
 
@@ -141,3 +143,56 @@ async def test_product(test_session):
 
     product_count = await test_session.execute(select(func.count()).select_from(Product))
     assert product_count.scalar() == 2
+
+    # Products Characteristics
+    characteristic_query_result = await test_session.execute(select(Characteristic))
+    characteristics = characteristic_query_result.scalars().all()
+
+    assert len(characteristics) == 3
+
+    c1, c2, c3 = characteristics[0], characteristics[1], characteristics[2]
+
+    assert c1.category_id == 1 and c2.category_id == 1 and c3.category_id != 1
+    assert c1.id == 2 and c1.title == 'characteristic 2 cat 1' and c1.type == 'integer'
+    assert c2.id == 3 and c2.title == 'characteristic 3 cat 1' and c2.type == 'string'
+    assert c3.id == 6 and c3.title == 'characteristic 4' and c3.type == 'integer'
+
+    with pytest.raises(HTTPException) as exc_info:
+        await ProductService.add_characteristic(test_session, 1, [characteristic_value_type_err, ])
+    assert 'Error data types, waiting integer' in exc_info.value.detail['messages']
+
+    product = await ProductService.detail(test_session, 1, True)
+    assert len(product.characteristics) == 0
+
+    with pytest.raises(HTTPException) as exc_info:
+        await ProductService.add_characteristic(test_session, 1, [characteristic_category_err, ])
+    assert 'Characteristics do not belong to the products' in exc_info.value.detail
+
+    # with pytest.raises(HTTPException) as exc_info:
+    #     await ProductService.add_characteristic(test_session, 1, [characteristic_id_err, ])
+    # assert 'A non-existent characteristic ID was passed.' in exc_info.value.detail
+
+    ch_pr = await ProductService.add_characteristic(test_session, 1, [characteristic_1_c_1_product_1, ])
+    assert len(ch_pr) == 1 and ch_pr[0].id == 1
+
+    ch_pr = await ProductService.add_characteristic(test_session, 1, [characteristic_1_c_2_product_1, ])
+    assert len(ch_pr) == 2
+
+    # with pytest.raises(HTTPException) as exc_info:
+    #     await ProductService.add_characteristic(test_session, 1, [characteristic_1_c_2_product_1, ])
+    # assert 'Duplication characteristic' in exc_info.value.detail
+
+    with pytest.raises(HTTPException) as exc_info:
+        await ProductService.update_characteristic(
+            test_session,
+            product_id=1,
+            data=[characteristic_update_type_err]
+        )
+    assert 'Error data types, waiting integer' in exc_info.value.detail['messages']
+
+    await ProductService.update_characteristic(
+        test_session,
+        product_id=1,
+        data=[characteristic_update]
+    )
+
