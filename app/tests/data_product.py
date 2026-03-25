@@ -1,5 +1,8 @@
-from app.product.schemas import CategorySchema, CharacteristicSchema, ProductSchema, ProductCharacteristicSchema, \
-    ProductCharacteristicSchemaUpdate
+from app.product.schemas import (CategorySchema,
+                                 CharacteristicSchema,
+                                 ProductSchema,
+                                 ProductCharacteristicSchema,
+                                 ProductCharacteristicSchemaUpdate)
 
 category_data_1 = CategorySchema(
     title='Category-1'

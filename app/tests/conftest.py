@@ -1,4 +1,7 @@
+import functools
+
 import pytest
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 from app.settings.database import Base
@@ -71,3 +74,27 @@ async def test_session(initialize_database):
         finally:
             await session.close()
             await close_engine(session_maker)
+
+
+async def error_session(func):
+    session_maker = get_async_session_maker(settings.test_postgres_url)
+    async with session_maker() as session:
+        try:
+            await func(session)
+        finally:
+            await session.close()
+            await close_engine(session_maker)
+
+async def assert_http_exception(func, expected_message: str):
+    session_maker = get_async_session_maker(settings.test_postgres_url)
+    async with session_maker() as session:
+        new_func = functools.partial(
+            func.func,
+            session,
+            *func.args[1:]
+        )
+        with pytest.raises(HTTPException) as exc_info:
+            await new_func()
+        assert expected_message in exc_info.value.detail
+        await session.close()
+        await close_engine(session_maker)
