@@ -12,11 +12,11 @@ BEGIN
     INTO is_draft
     FROM supplies s
     WHERE s.id = NEW.supplies_id;
-    
+
     IF is_draft THEN
         RETURN NEW;
     END IF;
-    IF (TG_OP = 'INSERT' OR TG_OP = 'UPDATE') THEN
+    IF (TG_OP = 'INSERT' OR TG_OP = 'UPDATE' OR TG_OP = 'DELETE') THEN
         IF (TG_OP = 'UPDATE') THEN
             -- FOR UPDATE.
             SELECT p.quantity - OLD.quantity + NEW.quantity
@@ -34,7 +34,7 @@ BEGIN
             SELECT p.quantity - OLD.quantity
             INTO final_quantity
             FROM product p
-            WHERE p.id = NEW.product_id;
+            WHERE p.id = OLD.product_id;
         END IF;
 
         -- CHECK: final_quantity >= 0
@@ -55,7 +55,7 @@ BEGIN
         ELSE 
             UPDATE product
             SET quantity = final_quantity
-            WHERE id = NEW.product_id;
+            WHERE id = OLD.product_id;
         END IF;
     END IF;
  RETURN NEW;
