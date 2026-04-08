@@ -51,6 +51,13 @@ document_data_2 = SuppliesSchema(
     draft=False
 )
 
+document_data_3 = SuppliesSchema(
+    document_number='D3',
+    document_data='2025-03-09',
+    supplier_id=1,
+    draft=False
+)
+
 products_data_document_1_product_1 = SuppliesAddProductSchema(
     product_id=1,
     quantity=3,
